@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "A construction site at sunset",
+      "imageUrl": "https://images.unsplash.com/photo-1710746055183-ba55e616bfe8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxjb25zdHJ1Y3Rpb24lMjBzdW5zZXR8ZW58MHx8fHwxNzYzOTI1ODUyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "construction sunset"
+    },
+    {
+      "id": "cement",
+      "description": "Bags of cement stacked on a pallet",
+      "imageUrl": "https://images.unsplash.com/photo-1728026462560-91b60aac93b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjZW1lbnQlMjBiYWdzfGVufDB8fHx8MTc2MzkyNTg1Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cement bags"
+    },
+    {
+      "id": "bricks",
+      "description": "A pallet of red bricks",
+      "imageUrl": "https://images.unsplash.com/photo-1584505192555-4feb7834358a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxyZWQlMjBicmlja3N8ZW58MHx8fHwxNzYzODE4ODI3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "red bricks"
+    },
+    {
+      "id": "rebar",
+      "description": "A bundle of steel rebar",
+      "imageUrl": "https://images.unsplash.com/photo-1763771420583-ff167240e281?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxzdGVlbCUyMHJlYmFyfGVufDB8fHx8MTc2MzkyNTg1Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "steel rebar"
+    },
+    {
+      "id": "wood",
+      "description": "Stacks of lumber",
+      "imageUrl": "https://images.unsplash.com/photo-1651990766796-b56814ad40b0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxsdW1iZXIlMjB3b29kfGVufDB8fHx8MTc2MzkyNTg1Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "lumber wood"
+    }
+  ]
 }
