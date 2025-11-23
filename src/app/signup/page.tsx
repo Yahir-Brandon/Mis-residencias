@@ -7,15 +7,15 @@ export default function SignupPage() {
     <div className="flex items-center justify-center min-h-[calc(100vh-14rem)] py-12 px-4">
       <Card className="w-full max-w-lg shadow-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold font-headline">Create an Account</CardTitle>
-          <CardDescription>Choose your account type and get started.</CardDescription>
+          <CardTitle className="text-3xl font-bold font-headline">Crear una Cuenta</CardTitle>
+          <CardDescription>Elige tu tipo de cuenta y empieza.</CardDescription>
         </CardHeader>
         <CardContent>
           <SignupForm />
            <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            ¿Ya tienes una cuenta?{' '}
             <Link href="/login" className="font-semibold text-primary hover:underline">
-              Log In
+              Iniciar Sesión
             </Link>
           </p>
         </CardContent>

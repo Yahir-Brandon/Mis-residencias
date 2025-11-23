@@ -7,15 +7,15 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-[calc(100vh-14rem)] py-12 px-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold font-headline">Welcome Back</CardTitle>
-          <CardDescription>Enter your credentials to access your account.</CardDescription>
+          <CardTitle className="text-3xl font-bold font-headline">Bienvenido de Vuelta</CardTitle>
+          <CardDescription>Ingresa tus credenciales para acceder a tu cuenta.</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
+            ¿No tienes una cuenta?{' '}
             <Link href="/signup" className="font-semibold text-primary hover:underline">
-              Sign Up
+              Regístrate
             </Link>
           </p>
         </CardContent>

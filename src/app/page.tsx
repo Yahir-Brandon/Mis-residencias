@@ -13,10 +13,10 @@ const featuredProducts = [
 ].filter(Boolean) as (typeof PlaceHolderImages)[0][];
 
 const productDetails = [
-  { title: 'Premium Cement', description: 'High-strength cement for all your construction needs.' },
-  { title: 'Clay Bricks', description: 'Durable and classic bricks for strong foundations.' },
-  { title: 'Steel Rebar', description: 'Reinforce your concrete structures with top-quality steel.' },
-  { title: 'Structural Lumber', description: 'Versatile and sturdy wood for framing and more.' },
+  { title: 'Cemento Premium', description: 'Cemento de alta resistencia para todas tus necesidades de construcción.' },
+  { title: 'Ladrillos de Arcilla', description: 'Ladrillos duraderos y clásicos para cimientos fuertes.' },
+  { title: 'Varilla de Acero', description: 'Refuerza tus estructuras de concreto con acero de primera calidad.' },
+  { title: 'Madera Estructural', description: 'Madera versátil y resistente para entramados y más.' },
 ];
 
 export default function Home() {
@@ -36,17 +36,17 @@ export default function Home() {
         <div className="absolute inset-0 bg-black/50" />
         <div className="relative z-10 max-w-4xl mx-auto px-4">
           <h1 className="text-4xl md:text-6xl font-headline font-bold tracking-tight text-shadow-lg">
-            Building Your Dreams, One Material at a Time
+            Construyendo Tus Sueños, Un Material a la Vez
           </h1>
           <p className="mt-4 text-lg md:text-xl max-w-2xl mx-auto text-primary-foreground/90">
-            High-quality construction materials for every project, from foundations to finishing touches.
+            Materiales de construcción de alta calidad para cada proyecto, desde los cimientos hasta los toques finales.
           </p>
           <div className="mt-8 flex justify-center gap-4">
             <Button asChild size="lg" className="font-bold">
-              <Link href="/signup">Get Started</Link>
+              <Link href="/signup">Empezar</Link>
             </Button>
             <Button asChild size="lg" variant="secondary" className="font-bold">
-              <Link href="/login">Log In</Link>
+              <Link href="/login">Iniciar Sesión</Link>
             </Button>
           </div>
         </div>
@@ -55,7 +55,7 @@ export default function Home() {
       <section id="products" className="py-16 md:py-24 bg-background">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-headline font-bold text-center mb-12">
-            Featured Products
+            Productos Destacados
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {featuredProducts.map((product, index) => (

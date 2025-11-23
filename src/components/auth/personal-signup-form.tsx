@@ -33,8 +33,8 @@ export function PersonalSignupForm() {
   function onSubmit(values: z.infer<typeof personalSignupSchema>) {
     console.log(values);
     toast({
-      title: 'Account Created!',
-      description: 'Your personal account has been successfully created.',
+      title: '¡Cuenta Creada!',
+      description: 'Tu cuenta personal ha sido creada exitosamente.',
     });
     form.reset();
   }
@@ -50,7 +50,7 @@ export function PersonalSignupForm() {
               <FormItem>
                 <FormLabel>Nombre</FormLabel>
                 <FormControl>
-                  <Input placeholder="John" {...field} />
+                  <Input placeholder="Juan" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -63,7 +63,7 @@ export function PersonalSignupForm() {
               <FormItem>
                 <FormLabel>Apellido</FormLabel>
                 <FormControl>
-                  <Input placeholder="Doe" {...field} />
+                  <Input placeholder="Pérez" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -90,7 +90,7 @@ export function PersonalSignupForm() {
             <FormItem>
               <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input placeholder="name@example.com" {...field} />
+                <Input placeholder="nombre@ejemplo.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -110,7 +110,7 @@ export function PersonalSignupForm() {
           )}
         />
         <Button type="submit" className="w-full font-bold">
-          Create Account
+          Crear Cuenta
         </Button>
       </form>
     </Form>

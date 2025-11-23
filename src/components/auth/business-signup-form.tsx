@@ -34,8 +34,8 @@ export function BusinessSignupForm() {
   function onSubmit(values: z.infer<typeof businessSignupSchema>) {
     console.log(values);
     toast({
-      title: 'Account Created!',
-      description: 'Your business account has been successfully created.',
+      title: '¡Cuenta Creada!',
+      description: 'Tu cuenta de empresa ha sido creada exitosamente.',
     });
     form.reset();
   }
@@ -122,7 +122,7 @@ export function BusinessSignupForm() {
           )}
         />
         <Button type="submit" className="w-full font-bold">
-          Create Business Account
+          Crear Cuenta de Empresa
         </Button>
       </form>
     </Form>

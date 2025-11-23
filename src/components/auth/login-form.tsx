@@ -32,15 +32,15 @@ export function LoginForm() {
     // For local testing, check against the test user
     if (values.email === testUser.email && values.password === testUser.password) {
       toast({
-        title: 'Login Successful',
-        description: 'Welcome back!',
+        title: 'Inicio de Sesión Exitoso',
+        description: '¡Bienvenido de vuelta!',
       });
       console.log('Login successful:', values);
     } else {
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Invalid email or password.',
+        title: 'Inicio de Sesión Fallido',
+        description: 'Correo electrónico o contraseña no válidos.',
       });
       console.log('Login failed: Invalid credentials');
     }
@@ -54,9 +54,9 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input placeholder="name@example.com" {...field} />
+                <Input placeholder="nombre@ejemplo.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -67,7 +67,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Contraseña</FormLabel>
               <FormControl>
                 <Input type="password" placeholder="••••••••" {...field} />
               </FormControl>
@@ -76,7 +76,7 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" className="w-full font-bold">
-          Log In
+          Iniciar Sesión
         </Button>
       </form>
     </Form>

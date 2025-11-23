@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="border-t bg-background">
       <div className="container mx-auto flex h-16 items-center justify-center px-4">
         <p className="text-sm text-muted-foreground">
-          &copy; {currentYear} ConstructConnect. All rights reserved.
+          &copy; {currentYear} ConstructConnect. Todos los derechos reservados.
         </p>
       </div>
     </footer>
