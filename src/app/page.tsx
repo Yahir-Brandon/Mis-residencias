@@ -1,22 +1,27 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { ShieldCheck, Users, Truck } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
-const featuredProducts = [
-  PlaceHolderImages.find((img) => img.id === 'cement'),
-  PlaceHolderImages.find((img) => img.id === 'bricks'),
-  PlaceHolderImages.find((img) => img.id === 'rebar'),
-  PlaceHolderImages.find((img) => img.id === 'wood'),
-].filter(Boolean) as (typeof PlaceHolderImages)[0][];
 
-const productDetails = [
-  { title: 'Cemento Premium', description: 'Cemento de alta resistencia para todas tus necesidades de construcción.' },
-  { title: 'Ladrillos de Arcilla', description: 'Ladrillos duraderos y clásicos para cimientos fuertes.' },
-  { title: 'Varilla de Acero', description: 'Refuerza tus estructuras de concreto con acero de primera calidad.' },
-  { title: 'Madera Estructural', description: 'Madera versátil y resistente para entramados y más.' },
+const whyChooseUs = [
+  {
+    icon: <ShieldCheck className="h-12 w-12 text-primary" />,
+    title: 'Calidad Insuperable',
+    description: 'Solo ofrecemos materiales que cumplen con los más altos estándares de la industria para garantizar la durabilidad y seguridad de tu proyecto.',
+  },
+  {
+    icon: <Users className="h-12 w-12 text-primary" />,
+    title: 'Asesoramiento Experto',
+    description: 'Nuestro equipo de expertos está siempre disponible para guiarte en la selección de los mejores materiales para tus necesidades específicas.',
+  },
+  {
+    icon: <Truck className="h-12 w-12 text-primary" />,
+    title: 'Logística Eficiente',
+    description: 'Entregamos tus materiales a tiempo y en perfectas condiciones, directamente en tu obra, para que no tengas que preocuparte por nada.',
+  },
 ];
 
 export default function Home() {
@@ -52,31 +57,20 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="products" className="py-16 md:py-24 bg-background">
+      <section id="why-us" className="py-16 md:py-24 bg-background">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-headline font-bold text-center mb-12">
-            Productos Destacados
+            ¿Por Qué Elegirnos?
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredProducts.map((product, index) => (
-              <Card key={product.id} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="p-0">
-                  <div className="aspect-w-3 aspect-h-2">
-                    <Image
-                      src={product.imageUrl}
-                      alt={product.description}
-                      width={600}
-                      height={400}
-                      className="object-cover"
-                      data-ai-hint={product.imageHint}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <CardTitle className="text-xl font-bold font-headline mb-2">{productDetails[index].title}</CardTitle>
-                  <p className="text-muted-foreground">{productDetails[index].description}</p>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+            {whyChooseUs.map((reason) => (
+              <div key={reason.title} className="flex flex-col items-center">
+                {reason.icon}
+                <h3 className="mt-4 text-2xl font-bold font-headline">{reason.title}</h3>
+                <p className="mt-2 text-muted-foreground max-w-xs">
+                  {reason.description}
+                </p>
+              </div>
             ))}
           </div>
         </div>
