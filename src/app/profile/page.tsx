@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { testUser } from "@/lib/placeholder-data";
 import Link from "next/link";
-import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity, DollarSign } from "lucide-react";
+import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function ProfilePage() {
@@ -59,25 +59,15 @@ export default function ProfilePage() {
             
             <Separator className="my-6" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium">Pedidos Recientes</CardTitle>
                         <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">5</div>
+                        <div className="text-2xl font-bold">0</div>
                         <p className="text-xs text-muted-foreground">en el último mes</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Gasto Total</CardTitle>
-                        <DollarSign className="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">$4,250.00</div>
-                        <p className="text-xs text-muted-foreground">historial completo</p>
                     </CardContent>
                 </Card>
                  <Card>
@@ -87,7 +77,7 @@ export default function ProfilePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-600">Activa</div>
-                        <p className="text-xs text-muted-foreground">desde Ene 2023</p>
+                        <p className="text-xs text-muted-foreground">desde Hoy</p>
                     </CardContent>
                 </Card>
             </div>
