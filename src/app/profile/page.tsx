@@ -51,9 +51,11 @@ export default function ProfilePage() {
         <div className="md:col-span-2">
             <h2 className="text-3xl font-bold font-headline mb-4">Panel de Control</h2>
             <div className="mb-6">
-                 <Button size="lg">
-                    <PackagePlus className="mr-2 h-5 w-5" />
-                    Nuevo Pedido
+                 <Button asChild size="lg">
+                    <Link href="/new-order">
+                        <PackagePlus className="mr-2 h-5 w-5" />
+                        Nuevo Pedido
+                    </Link>
                 </Button>
             </div>
             
