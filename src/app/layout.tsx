@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/footer';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'ConstructConnect',
+  title: 'Tlapaleria los Pinos',
   description: 'Tu tienda única para materiales de construcción.',
 };
 
