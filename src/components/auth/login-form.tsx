@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function LoginForm() {
   const { toast } = useToast();
+  const router = useRouter();
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -36,6 +38,7 @@ export function LoginForm() {
         description: '¡Bienvenido de vuelta!',
       });
       console.log('Login successful:', values);
+      router.push('/profile');
     } else {
       toast({
         variant: 'destructive',
