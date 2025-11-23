@@ -1,6 +1,7 @@
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ThemeToggle } from '../theme-toggle';
 
 export function Header() {
   return (
@@ -8,6 +9,7 @@ export function Header() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Logo />
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Button variant="ghost" asChild>
             <Link href="/login">Iniciar Sesión</Link>
           </Button>
