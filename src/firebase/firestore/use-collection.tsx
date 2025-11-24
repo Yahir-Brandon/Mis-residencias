@@ -25,6 +25,10 @@ export interface UseCollectionResult<T> {
   error: FirestoreError | Error | null; // Objeto de error, o null.
 }
 
+interface UseCollectionOptions {
+  disabled?: boolean;
+}
+
 /* Implementación interna de Query:
   https://github.com/firebase/firebase-js-sdk/blob/c5f08a9bc5da0d2b0207802c972d53724ccef055/packages/firestore/src/lite-api/reference.ts#L143
 */
@@ -39,30 +43,32 @@ export interface InternalQuery extends Query<DocumentData> {
 
 /**
  * Gancho de React para suscribirse a una colección o consulta de Firestore en tiempo real.
- * Maneja referencias/consultas nulas.
- * 
+ * Maneja referencias/consultas nulas y un estado de deshabilitado.
  *
  * ¡IMPORTANTE! DEBES MEMOIZAR el memoizedTargetRefOrQuery de entrada o sucederán COSAS MALAS
- * usa useMemo para memoizarlo según la guía de React. También asegúrate de que sus dependencias sean estables
- * referencias
+ * usa useMemoFirebase para memoizarlo.
  *  
  * @template T Tipo opcional para los datos del documento. Por defecto es any.
  * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
- * La CollectionReference o Query de Firestore. Espera si es null/undefined.
+ * La CollectionReference o Query de Firestore.
+ * @param {UseCollectionOptions} [options] - Opciones para el gancho.
+ * @param {boolean} [options.disabled=false] - Si es verdadero, el gancho no ejecutará la consulta.
  * @returns {UseCollectionResult<T>} Objeto con datos, isLoading, error.
  */
 export function useCollection<T = any>(
     memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
+    options: UseCollectionOptions = {}
 ): UseCollectionResult<T> {
+  const { disabled = false } = options;
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(!disabled);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    if (!memoizedTargetRefOrQuery) {
+    if (disabled || !memoizedTargetRefOrQuery) {
       setData(null);
       setIsLoading(false);
       setError(null);
@@ -72,7 +78,6 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    // Usa directamente memoizedTargetRefOrQuery ya que se asume que es la consulta final
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
@@ -85,7 +90,6 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // Esta lógica extrae la ruta de una referencia o una consulta
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
@@ -100,15 +104,16 @@ export function useCollection<T = any>(
         setData(null)
         setIsLoading(false)
 
-        // desencadena la propagación global de errores
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Vuelve a ejecutar si la consulta/referencia de destino cambia.
-  if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' no fue correctamente memoizado usando useMemoFirebase');
+  }, [memoizedTargetRefOrQuery, disabled]);
+  
+  if (memoizedTargetRefOrQuery && !disabled && !memoizedTargetRefOrQuery.__memo) {
+    throw new Error('La consulta a useCollection no fue correctamente memoizada usando useMemoFirebase');
   }
+
   return { data, isLoading, error };
 }

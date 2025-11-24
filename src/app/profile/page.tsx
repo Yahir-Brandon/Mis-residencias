@@ -33,6 +33,7 @@ export default function ProfilePage() {
     }
 
     const checkUser = async () => {
+      setIsLoadingProfile(true);
       try {
         await user.reload();
         const userDocRef = doc(firestore, "users", user.uid);
@@ -45,6 +46,7 @@ export default function ProfilePage() {
             setIsAdmin(true);
           }
         } else {
+          // If no user document is found, it's safer to sign out.
           signOut(auth).finally(() => router.push('/login'));
         }
       } catch (error) {

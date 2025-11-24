@@ -22,19 +22,22 @@ const statusStyles: {[key in OrderStatus]: string} = {
 
 export default function UserOrderList() {
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user } = useUser();
   const router = useRouter();
 
+  // The query is only enabled when the user is available.
   const userOrdersQuery = useMemoFirebase(() => {
-    if (isUserLoading || !user) return null;
+    if (!user) return null;
     return query(
       collection(firestore, 'orders'),
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-  }, [firestore, user, isUserLoading]);
+  }, [firestore, user]);
 
-  const { data: orders, isLoading, error } = useCollection(userOrdersQuery);
+  const { data: orders, isLoading, error } = useCollection(userOrdersQuery, {
+    disabled: !user, // Explicitly disable the hook if there is no user
+  } as any);
 
   return (
     <Card>
