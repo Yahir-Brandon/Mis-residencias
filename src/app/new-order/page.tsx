@@ -13,9 +13,8 @@ import { mexicoStates, State } from '@/lib/mexico-states';
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, Plus } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -349,8 +348,8 @@ export default function NewOrderPage() {
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Fechas de Entrega</FormLabel>
-                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                      <PopoverTrigger asChild>
+                    <Dialog open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                      <DialogTrigger asChild>
                         <FormControl>
                           <Button
                             variant={"outline"}
@@ -374,25 +373,35 @@ export default function NewOrderPage() {
                             )}
                           </Button>
                         </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <div className="p-4 text-sm text-muted-foreground">
-                          Selecciona una fecha de inicio y una fecha final para la entrega.
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-4xl flex justify-center">
+                        <div className="flex flex-col items-center">
+                          <DialogHeader>
+                            <DialogTitle>Selecciona las Fechas</DialogTitle>
+                            <DialogDescription>
+                              Selecciona una fecha de inicio y una fecha final para la entrega.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={field.value.from}
+                            selected={{from: field.value.from!, to: field.value.to}}
+                            onSelect={(dateRange) => {
+                              field.onChange(dateRange)
+                            }}
+                            numberOfMonths={2}
+                            locale={es}
+                            className="p-4"
+                          />
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button onClick={() => setIsCalendarOpen(false)}>Confirmar</Button>
+                            </DialogClose>
+                          </DialogFooter>
                         </div>
-                        <Calendar
-                          initialFocus
-                          mode="range"
-                          defaultMonth={field.value.from}
-                          selected={{from: field.value.from!, to: field.value.to}}
-                          onSelect={(dateRange) => field.onChange(dateRange)}
-                          numberOfMonths={2}
-                          locale={es}
-                        />
-                        <div className="p-4 border-t flex justify-end">
-                            <Button onClick={() => setIsCalendarOpen(false)}>Confirmar</Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                      </DialogContent>
+                    </Dialog>
                     <FormDescription>
                         Define el periodo en el que puedes recibir el material.
                     </FormDescription>
@@ -413,3 +422,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
