@@ -28,12 +28,12 @@ export function PhoneAuthForm() {
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  // Initialize reCAPTCHA
+  // Inicializar reCAPTCHA
   useEffect(() => {
     window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
       'size': 'invisible',
       'callback': (response: any) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
+        // reCAPTCHA resuelto, permite signInWithPhoneNumber.
       }
     });
   }, [auth]);
@@ -158,7 +158,7 @@ export function PhoneAuthForm() {
   );
 }
 
-// You need to declare this on the window object if you're using TypeScript
+// Necesitas declarar esto en el objeto window si estás usando TypeScript
 declare global {
     interface Window {
         recaptchaVerifier: RecaptchaVerifier;

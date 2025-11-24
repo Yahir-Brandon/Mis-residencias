@@ -16,7 +16,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 
-// Augment jsPDF with the autoTable method
+// Aumenta jsPDF con el método autoTable
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
@@ -62,12 +62,12 @@ function OrderSummaryContent() {
       const deliveryStart = new Date(orderData.deliveryDates.from);
       const deliveryEnd = new Date(orderData.deliveryDates.to);
 
-      // Header
+      // Encabezado
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(18);
       doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
 
-      // Order Info
+      // Información del Pedido
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       
@@ -94,7 +94,7 @@ function OrderSummaryContent() {
       
       const lastY = (doc as any).lastAutoTable.finalY || 60;
       
-      // Materials Table
+      // Tabla de Materiales
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Detalles del Pedido', 14, lastY + 10);
@@ -120,7 +120,7 @@ function OrderSummaryContent() {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         styles: { fontSize: 10 },
         didDrawPage: (data) => {
-          // Footer
+          // Pie de página
           const pageCount = doc.internal.getNumberOfPages();
           doc.setFontSize(8);
           doc.setTextColor(150);
@@ -136,7 +136,7 @@ function OrderSummaryContent() {
       doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
       doc.text(`$${orderData.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
 
-      // Calendar
+      // Calendario
       doc.setFontSize(12);
       doc.text('Periodo de Entrega Programado', 14, finalTableY + 25);
       
@@ -173,9 +173,6 @@ function OrderSummaryContent() {
                     continue;
                 }
 
-                const x = startX + dayOfWeek * cellWidth;
-                const y = calendarY + (week + 1) * cellHeight;
-
                 const currentDate = new Date(year, month, currentDay);
                 const isStartDate = getDate(currentDate) === getDate(deliveryStart) && getMonth(currentDate) === getMonth(deliveryStart) && getYear(currentDate) === getYear(deliveryStart);
                 const isEndDate = getDate(currentDate) === getDate(deliveryEnd) && getMonth(currentDate) === getMonth(deliveryEnd) && getYear(currentDate) === getYear(deliveryEnd);
@@ -184,15 +181,15 @@ function OrderSummaryContent() {
                 const originalTextColor = doc.getTextColor();
                 
                 if (isStartDate) {
-                    doc.setFillColor(220, 53, 69); // Red
+                    doc.setFillColor(220, 53, 69); // Rojo
                     doc.setTextColor(255, 255, 255);
                     doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
                 } else if (isEndDate) {
-                    doc.setFillColor(25, 135, 84); // Green
+                    doc.setFillColor(25, 135, 84); // Verde
                     doc.setTextColor(255, 255, 255);
                     doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
                 } else if (isInRange) {
-                    doc.setFillColor(233, 236, 239); // Light gray
+                    doc.setFillColor(233, 236, 239); // Gris claro
                     doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
                 }
                 
@@ -216,18 +213,18 @@ function OrderSummaryContent() {
         drawMonth(deliveryEnd, 80, calendarYPos);
       }
 
-      // Legend
+      // Leyenda
       const legendY = calendarYPos + 6 * 7 + 10;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       
-      // Start Date
-      doc.setFillColor(220, 53, 69); // Red
+      // Fecha de Inicio
+      doc.setFillColor(220, 53, 69); // Rojo
       doc.rect(14, legendY - 2, 3, 3, 'F');
       doc.text('Inicio de entrega', 20, legendY);
 
-      // End Date
-      doc.setFillColor(25, 135, 84); // Green
+      // Fecha de Fin
+      doc.setFillColor(25, 135, 84); // Verde
       doc.rect(50, legendY - 2, 3, 3, 'F');
       doc.text('Fin de entrega', 56, legendY);
 
@@ -275,7 +272,7 @@ function OrderSummaryContent() {
               </CardDescription>
           </CardHeader>
 
-          {/* This content is now for display only, the PDF is generated programmatically */}
+          {/* Este contenido es solo para mostrar, el PDF se genera programáticamente */}
           <div ref={summaryRef} className="p-6 sm:p-8 bg-white text-black rounded-lg">
               <div className="flex justify-center items-center mb-4">
                   <Logo />
@@ -395,5 +392,3 @@ export default function OrderSummaryPage() {
         </Suspense>
     )
 }
-
-    

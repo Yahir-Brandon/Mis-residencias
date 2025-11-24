@@ -1,4 +1,4 @@
-// This file contains a mock user for local testing purposes.
+// Este archivo contiene un usuario de prueba para fines de prueba locales.
 export const testUser = {
   name: 'Juan Pérez',
   email: 'test@example.com',

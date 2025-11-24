@@ -1,2 +1,2 @@
-// Flows will be imported for their side effects in this file.
+// Los flujos se importarán por sus efectos secundarios en este archivo.
 import './flows/analyze-delivery-date-flow';

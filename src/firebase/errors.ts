@@ -35,9 +35,9 @@ interface SecurityRuleRequest {
 }
 
 /**
- * Builds a security-rule-compliant auth object from the Firebase User.
- * @param currentUser The currently authenticated Firebase user.
- * @returns An object that mirrors request.auth in security rules, or null.
+ * Construye un objeto de autenticación compatible con las reglas de seguridad a partir del usuario de Firebase.
+ * @param currentUser El usuario de Firebase actualmente autenticado.
+ * @returns Un objeto que refleja request.auth en las reglas de seguridad, o null.
  */
 function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
   if (!currentUser) {
@@ -69,23 +69,23 @@ function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
 }
 
 /**
- * Builds the complete, simulated request object for the error message.
- * It safely tries to get the current authenticated user.
- * @param context The context of the failed Firestore operation.
- * @returns A structured request object.
+ * Construye el objeto de solicitud simulado completo para el mensaje de error.
+ * Intenta obtener de forma segura el usuario autenticado actual.
+ * @param context El contexto de la operación de Firestore fallida.
+ * @returns Un objeto de solicitud estructurado.
  */
 function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
   let authObject: FirebaseAuthObject | null = null;
   try {
-    // Safely attempt to get the current user.
+    // Intenta obtener el usuario actual de forma segura.
     const firebaseAuth = getAuth();
     const currentUser = firebaseAuth.currentUser;
     if (currentUser) {
       authObject = buildAuthObject(currentUser);
     }
   } catch {
-    // This will catch errors if the Firebase app is not yet initialized.
-    // In this case, we'll proceed without auth information.
+    // Esto capturará errores si la aplicación de Firebase aún no está inicializada.
+    // En este caso, procederemos sin información de autenticación.
   }
 
   return {
@@ -97,19 +97,19 @@ function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
 }
 
 /**
- * Builds the final, formatted error message for the LLM.
- * @param requestObject The simulated request object.
- * @returns A string containing the error message and the JSON payload.
+ * Construye el mensaje de error final y formateado para el LLM.
+ * @param requestObject El objeto de solicitud simulado.
+ * @returns Una cadena que contiene el mensaje de error y el payload JSON.
  */
 function buildErrorMessage(requestObject: SecurityRuleRequest): string {
-  return `Missing or insufficient permissions: The following request was denied by Firestore Security Rules:
+  return `Permisos faltantes o insuficientes: La siguiente solicitud fue denegada por las Reglas de Seguridad de Firestore:
 ${JSON.stringify(requestObject, null, 2)}`;
 }
 
 /**
- * A custom error class designed to be consumed by an LLM for debugging.
- * It structures the error information to mimic the request object
- * available in Firestore Security Rules.
+ * Una clase de error personalizada diseñada para ser consumida por un LLM para depuración.
+ * Estructura la información del error para imitar el objeto de solicitud
+ * disponible en las Reglas de Seguridad de Firestore.
  */
 export class FirestorePermissionError extends Error {
   public readonly request: SecurityRuleRequest;

@@ -13,8 +13,8 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import {FirestorePermissionError} from '@/firebase/errors';
 
 /**
- * Initiates a setDoc operation for a document reference.
- * Does NOT await the write operation internally.
+ * Inicia una operación setDoc para una referencia de documento.
+ * NO espera internamente la operación de escritura.
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
   setDoc(docRef, data, options).catch(error => {
@@ -22,19 +22,19 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
       'permission-error',
       new FirestorePermissionError({
         path: docRef.path,
-        operation: 'write', // or 'create'/'update' based on options
+        operation: 'write', // o 'create'/'update' según las opciones
         requestResourceData: data,
       })
     )
   })
-  // Execution continues immediately
+  // La ejecución continúa inmediatamente
 }
 
 
 /**
- * Initiates an addDoc operation for a collection reference.
- * Does NOT await the write operation internally.
- * Returns the Promise for the new doc ref, but typically not awaited by caller.
+ * Inicia una operación addDoc para una referencia de colección.
+ * NO espera internamente la operación de escritura.
+ * Devuelve la Promesa para la nueva referencia de documento, pero típicamente no es esperada por el llamador.
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
   const promise = addDoc(colRef, data)
@@ -53,8 +53,8 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 
 
 /**
- * Initiates an updateDoc operation for a document reference.
- * Does NOT await the write operation internally.
+ * Inicia una operación updateDoc para una referencia de documento.
+ * NO espera internamente la operación de escritura.
  */
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
@@ -72,8 +72,8 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
 
 
 /**
- * Initiates a deleteDoc operation for a document reference.
- * Does NOT await the write operation internally.
+ * Inicia una operación deleteDoc para una referencia de documento.
+ * NO espera internamente la operación de escritura.
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
   deleteDoc(docRef)

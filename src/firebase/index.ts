@@ -5,22 +5,22 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+// IMPORTANTE: NO MODIFICAR ESTA FUNCIÓN
 export function initializeFirebase() {
   if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
+    // ¡Importante! initializeApp() se llama sin argumentos porque Firebase App Hosting
+    // se integra con la función initializeApp() para proporcionar las variables de entorno necesarias para
+    // poblar las FirebaseOptions en producción. Es crítico que intentemos llamar a initializeApp()
+    // sin argumentos.
     let firebaseApp;
     try {
-      // Attempt to initialize via Firebase App Hosting environment variables
+      // Intenta inicializar a través de las variables de entorno de Firebase App Hosting
       firebaseApp = initializeApp();
     } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
+      // Solo advertir en producción porque es normal usar firebaseConfig para inicializar
+      // durante el desarrollo
       if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
+        console.warn('La inicialización automática falló. Se recurrirá al objeto de configuración de Firebase.', e);
       }
       firebaseApp = initializeApp(firebaseConfig);
     }
@@ -28,7 +28,7 @@ export function initializeFirebase() {
     return getSdks(firebaseApp);
   }
 
-  // If already initialized, return the SDKs with the already initialized App
+  // Si ya está inicializado, devuelve los SDKs con la App ya inicializada
   return getSdks(getApp());
 }
 

@@ -12,20 +12,20 @@ import {
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-/** Utility type to add an 'id' field to a given type T. */
+/** Tipo de utilidad para agregar un campo 'id' a un tipo T dado. */
 export type WithId<T> = T & { id: string };
 
 /**
- * Interface for the return value of the useCollection hook.
- * @template T Type of the document data.
+ * Interfaz para el valor de retorno del gancho useCollection.
+ * @template T Tipo de los datos del documento.
  */
 export interface UseCollectionResult<T> {
-  data: WithId<T>[] | null; // Document data with ID, or null.
-  isLoading: boolean;       // True if loading.
-  error: FirestoreError | Error | null; // Error object, or null.
+  data: WithId<T>[] | null; // Datos del documento con ID, o null.
+  isLoading: boolean;       // Verdadero si está cargando.
+  error: FirestoreError | Error | null; // Objeto de error, o null.
 }
 
-/* Internal implementation of Query:
+/* Implementación interna de Query:
   https://github.com/firebase/firebase-js-sdk/blob/c5f08a9bc5da0d2b0207802c972d53724ccef055/packages/firestore/src/lite-api/reference.ts#L143
 */
 export interface InternalQuery extends Query<DocumentData> {
@@ -38,18 +38,18 @@ export interface InternalQuery extends Query<DocumentData> {
 }
 
 /**
- * React hook to subscribe to a Firestore collection or query in real-time.
- * Handles nullable references/queries.
+ * Gancho de React para suscribirse a una colección o consulta de Firestore en tiempo real.
+ * Maneja referencias/consultas nulas.
  * 
  *
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence.  Also make sure that it's dependencies are stable
- * references
+ * ¡IMPORTANTE! DEBES MEMOIZAR el memoizedTargetRefOrQuery de entrada o sucederán COSAS MALAS
+ * usa useMemo para memoizarlo según la guía de React. También asegúrate de que sus dependencias sean estables
+ * referencias
  *  
- * @template T Optional type for document data. Defaults to any.
+ * @template T Tipo opcional para los datos del documento. Por defecto es any.
  * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
- * The Firestore CollectionReference or Query. Waits if null/undefined.
- * @returns {UseCollectionResult<T>} Object with data, isLoading, error.
+ * La CollectionReference o Query de Firestore. Espera si es null/undefined.
+ * @returns {UseCollectionResult<T>} Objeto con datos, isLoading, error.
  */
 export function useCollection<T = any>(
     memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
@@ -72,7 +72,7 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
+    // Usa directamente memoizedTargetRefOrQuery ya que se asume que es la consulta final
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
@@ -85,7 +85,7 @@ export function useCollection<T = any>(
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
+        // Esta lógica extrae la ruta de una referencia o una consulta
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
@@ -100,15 +100,15 @@ export function useCollection<T = any>(
         setData(null)
         setIsLoading(false)
 
-        // trigger global error propagation
+        // desencadena la propagación global de errores
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [memoizedTargetRefOrQuery]); // Vuelve a ejecutar si la consulta/referencia de destino cambia.
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    throw new Error(memoizedTargetRefOrQuery + ' no fue correctamente memoizado usando useMemoFirebase');
   }
   return { data, isLoading, error };
 }

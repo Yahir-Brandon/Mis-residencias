@@ -1,29 +1,29 @@
 'use client';
 import {
-  Auth, // Import Auth type for type hinting
+  Auth, // Importa el tipo Auth para las sugerencias de tipo
   signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  // Assume getAuth and app are initialized elsewhere
+  // Asume que getAuth y app se inicializan en otro lugar
 } from 'firebase/auth';
 
-/** Initiate anonymous sign-in (non-blocking). */
+/** Inicia el inicio de sesión anónimo (no bloqueante). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
-  // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
+  // CRÍTICO: Llama a signInAnonymously directamente. NO uses 'await signInAnonymously(...)'.
   signInAnonymously(authInstance);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+  // El código continúa inmediatamente. El cambio de estado de autenticación es manejado por el listener onAuthStateChanged.
 }
 
-/** Initiate email/password sign-up (non-blocking). */
+/** Inicia el registro con correo electrónico/contraseña (no bloqueante). */
 export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call createUserWithEmailAndPassword directly. Do NOT use 'await createUserWithEmailAndPassword(...)'.
+  // CRÍTICO: Llama a createUserWithEmailAndPassword directamente. NO uses 'await createUserWithEmailAndPassword(...)'.
   createUserWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+  // El código continúa inmediatamente. El cambio de estado de autenticación es manejado por el listener onAuthStateChanged.
 }
 
-/** Initiate email/password sign-in (non-blocking). */
+/** Inicia el inicio de sesión con correo electrónico/contraseña (no bloqueante). */
 export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
+  // CRÍTICO: Llama a signInWithEmailAndPassword directamente. NO uses 'await signInWithEmailAndPassword(...)'.
   signInWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+  // El código continúa inmediatamente. El cambio de estado de autenticación es manejado por el listener onAuthStateChanged.
 }
