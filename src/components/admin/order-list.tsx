@@ -3,7 +3,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, orderBy, query, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2 } from 'lucide-react';
+import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -30,6 +30,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { useRouter } from 'next/navigation';
 
 type OrderStatus = 'Pendiente' | 'En proceso' | 'Enviado' | 'Entregado' | 'Cancelado';
 
@@ -51,6 +52,7 @@ const statusStyles: {[key in OrderStatus]: string} = {
 export default function OrderList() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
   const ordersCollectionRef = useMemoFirebase(() => query(collection(firestore, 'orders'), orderBy('createdAt', 'desc')), [firestore]);
   const { data: orders, isLoading, error } = useCollection(ordersCollectionRef);
 
@@ -106,6 +108,11 @@ export default function OrderList() {
         });
     }
   }
+
+  const handleViewDetails = (orderId: string) => {
+    router.push(`/order-summary?id=${orderId}`);
+  };
+
 
   return (
     <Card>
@@ -175,6 +182,10 @@ export default function OrderList() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleViewDetails(order.id)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver Detalles del Pedido
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'En proceso')}>
                             <Package className="mr-2 h-4 w-4" />
