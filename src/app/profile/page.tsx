@@ -63,19 +63,21 @@ export default function ProfilePage() {
 
         {/* Dashboard Section */}
         <div className="md:col-span-2">
-            <h2 className="text-3xl font-bold font-headline mb-4">Panel de Control</h2>
-            <div className="mb-6">
-                 <Button asChild size="lg">
-                    <Link href="/new-order">
-                        <PackagePlus className="mr-2 h-5 w-5" />
-                        Nuevo Pedido
-                    </Link>
-                </Button>
-            </div>
-            
-            <Separator className="my-6" />
-
+            <h2 className="text-3xl font-bold font-headline mb-6">Panel de Control</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Nuevo Pedido</CardTitle>
+                        <PackagePlus className="h-5 w-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="mt-4">
+                            <Link href="/new-order">
+                                Crear un nuevo pedido
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium">Pedidos Recientes</CardTitle>
