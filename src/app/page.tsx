@@ -4,7 +4,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ShieldCheck, Users, Truck, BrainCircuit, Gem, Zap, Shield, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
 
@@ -131,11 +131,6 @@ export default function Home() {
                 <CardContent className="flex-grow">
                   <CardDescription>{quality.description}</CardDescription>
                 </CardContent>
-                <CardFooter>
-                  <Button asChild className="w-full font-bold">
-                    <Link href="/new-order">Cotizar Ahora</Link>
-                  </Button>
-                </CardFooter>
               </Card>
             ))}
           </div>
