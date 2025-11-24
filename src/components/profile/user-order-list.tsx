@@ -22,7 +22,7 @@ const statusStyles: {[key in OrderStatus]: string} = {
 
 export default function UserOrderList() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   const userOrdersQuery = useMemoFirebase(() => {
@@ -37,6 +37,25 @@ export default function UserOrderList() {
   const { data: orders, isLoading, error } = useCollection(userOrdersQuery, {
     disabled: !user,
   });
+
+  if (isUserLoading) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                    <ShoppingCart className="h-5 w-5" />
+                    <span>Mis Pedidos</span>
+                </CardTitle>
+                <CardDescription>Consulta el historial de tus pedidos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-center h-24">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+                </div>
+            </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <Card>
