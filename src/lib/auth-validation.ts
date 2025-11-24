@@ -16,7 +16,7 @@ export const loginSchema = z.object({
 export const personalSignupSchema = z.object({
   firstName: z.string().min(1, { message: "El nombre es requerido." }),
   lastName: z.string().min(1, { message: "El apellido es requerido." }),
-  phone: z.string().min(10, { message: "El número de teléfono debe tener al menos 10 dígitos." }),
+  phone: z.string().min(10, { message: "El número de teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, "Solo se permiten números."),
   email: z.string().email({ message: "Correo electrónico inválido." }),
   password: passwordValidation,
 });
@@ -28,6 +28,6 @@ export const businessSignupSchema = z.object({
   rfc: z.string()
     .min(12, { message: "El RFC debe tener entre 12 y 13 caracteres." })
     .max(13, { message: "El RFC debe tener entre 12 y 13 caracteres." }),
-  phone: z.string().min(10, { message: "El número de teléfono debe tener al menos 10 dígitos." }),
+  phone: z.string().min(10, { message: "El número de teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, "Solo se permiten números."),
   password: passwordValidation,
 });

@@ -90,7 +90,16 @@ export default function NewOrderPage() {
                     <FormItem>
                       <FormLabel>Número de Teléfono</FormLabel>
                       <FormControl>
-                        <Input type="text" inputMode="numeric" placeholder="55 1234 5678" {...field} />
+                        <Input 
+                          type="text" 
+                          inputMode="numeric" 
+                          placeholder="55 1234 5678" 
+                          {...field}
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/\D/g, '');
+                            field.onChange(numericValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -121,7 +130,16 @@ export default function NewOrderPage() {
                     <FormItem>
                       <FormLabel>Número</FormLabel>
                       <FormControl>
-                        <Input type="text" inputMode="numeric" placeholder="742" {...field} />
+                        <Input 
+                          type="text" 
+                          inputMode="numeric" 
+                          placeholder="742" 
+                          {...field}
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/\D/g, '');
+                            field.onChange(numericValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -137,7 +155,16 @@ export default function NewOrderPage() {
                     <FormItem>
                       <FormLabel>Código Postal</FormLabel>
                       <FormControl>
-                        <Input type="text" inputMode="numeric" placeholder="12345" {...field} />
+                        <Input 
+                          type="text" 
+                          inputMode="numeric" 
+                          placeholder="12345" 
+                          {...field} 
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/\D/g, '');
+                            field.onChange(numericValue);
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
