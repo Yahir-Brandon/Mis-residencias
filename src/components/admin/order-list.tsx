@@ -247,223 +247,223 @@ export default function OrderList() {
         <CardDescription>Lista de todos los pedidos realizados.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Solicitante</TableHead>
-              <TableHead>Obra</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Prioridad</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className='text-right'>Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center h-24">
-                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                </TableCell>
-              </TableRow>
-            )}
-            {error && (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center h-24 text-destructive">
-                  <div className="flex items-center justify-center gap-2">
-                    <AlertTriangle className="h-5 w-5"/>
-                    <span>Error al cargar pedidos: Permisos insuficientes.</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-            {!isLoading && !error && orders?.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>
-                  {order.createdAt ? format(order.createdAt.toDate(), 'dd/MM/yyyy', { locale: es }) : 'N/A'}
-                </TableCell>
-                <TableCell>{order.requesterName}</TableCell>
-                <TableCell>{order.projectName}</TableCell>
-                <TableCell>${order.total.toFixed(2)}</TableCell>
-                <TableCell>
-                    <Badge className={priorityStyles[order.priority] || 'bg-gray-400'}>
-                        {order.priority}
-                    </Badge>
-                </TableCell>
-                <TableCell>
-                    <Badge variant="outline" className={statusStyles[order.status as OrderStatus] || ''}>
-                        {order.status}
-                    </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Dialog>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Abrir menú</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DialogTrigger asChild>
-                           <DropdownMenuItem onSelect={() => handleViewDetails(order)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Ver Detalles del Pedido
-                          </DropdownMenuItem>
-                        </DialogTrigger>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'En proceso')}>
-                            <Package className="mr-2 h-4 w-4" />
-                            Marcar como "En proceso"
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'Enviado')}>
-                            <Truck className="mr-2 h-4 w-4" />
-                            Marcar como "Enviado"
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'Entregado')}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Marcar como "Entregado"
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" onClick={() => handleStatusChange(order.id, 'Cancelado')}>
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Cancelar Pedido
-                        </DropdownMenuItem>
-                         <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 focus:bg-red-50">
-                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Borrar Pedido
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Esto eliminará permanentemente el pedido de la base de datos.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteOrder(order.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Sí, borrar pedido
-                                </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </Dialog>
-                </TableCell>
-              </TableRow>
-            ))}
-            {!isLoading && !error && orders?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  No se encontraron pedidos.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <DialogContent className="max-w-3xl">
-            {selectedOrder && (
-                <>
-                    <DialogHeader>
-                        <DialogTitle>Resumen del Pedido: {selectedOrder.projectName}</DialogTitle>
-                        <DialogDescription>
-                            Realizado por {selectedOrder.requesterName} el {format(selectedOrder.createdAt.toDate(), 'dd/MM/yyyy', { locale: es })}.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="max-h-[60vh] overflow-y-auto p-4">
-                        <div className="text-sm space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
-                                    <p>{selectedOrder.requesterName}</p>
-                                </div>
-                                <div>
-                                    <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
-                                    <p>{selectedOrder.projectName}</p>
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
-                                <p>{selectedOrder.street} {selectedOrder.number}, {selectedOrder.municipality}, {selectedOrder.state}, C.P. {selectedOrder.postalCode}</p>
-                            </div>
-                            <div>
-                                <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
-                                <p>{selectedOrder.phone}</p>
-                            </div>
-                        </div>
-
-                        <Separator className="my-4 bg-gray-300" />
-                        
-                        <h3 className="font-bold uppercase text-center mb-2">Detalles del Pedido</h3>
-                        <Table>
-                            <TableHeader>
-                            <TableRow>
-                                <TableHead>Descripción</TableHead>
-                                <TableHead className="text-center">Cantidad</TableHead>
-                                <TableHead className="text-right">P. Unitario</TableHead>
-                                <TableHead className="text-right">Importe</TableHead>
-                            </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                            {selectedOrder.materials.map((material: any, index: number) => {
-                                const materialInfo = materialsList.find(m => m.name === material.name);
-                                const unitPrice = materialInfo?.price || 0;
-                                const subtotal = material.quantity * unitPrice;
-                                return (
-                                <TableRow key={index}>
-                                    <TableCell className="capitalize">{material.name}</TableCell>
-                                    <TableCell className="text-center">{material.quantity} {materialInfo?.unit}(s)</TableCell>
-                                    <TableCell className="text-right">${unitPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">${subtotal.toFixed(2)}</TableCell>
-                                </TableRow>
-                                )
-                            })}
-                            </TableBody>
-                            <TableFooter>
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-right font-bold text-lg">Total del Pedido:</TableCell>
-                                <TableCell className="text-right font-bold text-lg">${selectedOrder.total.toFixed(2)} MXN</TableCell>
-                            </TableRow>
-                            </TableFooter>
-                        </Table>
-                        
-                        <Separator className="my-4 bg-gray-300" />
-                        
-                        <div className="flex flex-col items-center">
-                            <h3 className="font-bold uppercase mb-2">Periodo de Entrega Programado</h3>
-                            <p>
-                                Del {format(selectedOrder.deliveryDates.from.toDate(), 'PPP', { locale: es })} al {format(selectedOrder.deliveryDates.to.toDate(), 'PPP', { locale: es })}
-                            </p>
-                        </div>
+        <Dialog>
+            <Table>
+            <TableHeader>
+                <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Solicitante</TableHead>
+                <TableHead>Obra</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Prioridad</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className='text-right'>Acciones</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {isLoading && (
+                <TableRow>
+                    <TableCell colSpan={7} className="text-center h-24">
+                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+                    </TableCell>
+                </TableRow>
+                )}
+                {error && (
+                <TableRow>
+                    <TableCell colSpan={7} className="text-center h-24 text-destructive">
+                    <div className="flex items-center justify-center gap-2">
+                        <AlertTriangle className="h-5 w-5"/>
+                        <span>Error al cargar pedidos: Permisos insuficientes.</span>
                     </div>
-                    <DialogFooter className="pt-4">
-                        <Button onClick={generatePdf} disabled={isGeneratingPdf}>
-                            {isGeneratingPdf ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Generando...
-                                </>
-                            ) : (
-                                <>
-                                    <FileDown className="mr-2 h-4 w-4" />
-                                    Descargar PDF
-                                </>
-                            )}
-                        </Button>
-                        <DialogClose asChild>
-                            <Button variant="outline">Cerrar</Button>
-                        </DialogClose>
-                    </DialogFooter>
-                </>
-            )}
-        </DialogContent>
+                    </TableCell>
+                </TableRow>
+                )}
+                {!isLoading && !error && orders?.map((order) => (
+                <TableRow key={order.id}>
+                    <TableCell>
+                    {order.createdAt ? format(order.createdAt.toDate(), 'dd/MM/yyyy', { locale: es }) : 'N/A'}
+                    </TableCell>
+                    <TableCell>{order.requesterName}</TableCell>
+                    <TableCell>{order.projectName}</TableCell>
+                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                    <TableCell>
+                        <Badge className={priorityStyles[order.priority] || 'bg-gray-400'}>
+                            {order.priority}
+                        </Badge>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant="outline" className={statusStyles[order.status as OrderStatus] || ''}>
+                            {order.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DialogTrigger asChild>
+                            <DropdownMenuItem onSelect={() => handleViewDetails(order)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Ver Detalles del Pedido
+                            </DropdownMenuItem>
+                            </DialogTrigger>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'En proceso')}>
+                                <Package className="mr-2 h-4 w-4" />
+                                Marcar como "En proceso"
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'Enviado')}>
+                                <Truck className="mr-2 h-4 w-4" />
+                                Marcar como "Enviado"
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'Entregado')}>
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Marcar como "Entregado"
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" onClick={() => handleStatusChange(order.id, 'Cancelado')}>
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Cancelar Pedido
+                            </DropdownMenuItem>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 focus:bg-red-50">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Borrar Pedido
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el pedido de la base de datos.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteOrder(order.id)} className="bg-destructive hover:bg-destructive/90">
+                                        Sí, borrar pedido
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                </TableRow>
+                ))}
+                {!isLoading && !error && orders?.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    No se encontraron pedidos.
+                    </TableCell>
+                </TableRow>
+                )}
+            </TableBody>
+            </Table>
+            <DialogContent className="max-w-3xl">
+                {selectedOrder && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Resumen del Pedido: {selectedOrder.projectName}</DialogTitle>
+                            <DialogDescription>
+                                Realizado por {selectedOrder.requesterName} el {format(selectedOrder.createdAt.toDate(), 'dd/MM/yyyy', { locale: es })}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-[60vh] overflow-y-auto p-4">
+                            <div className="text-sm space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
+                                        <p>{selectedOrder.requesterName}</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
+                                        <p>{selectedOrder.projectName}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
+                                    <p>{selectedOrder.street} {selectedOrder.number}, {selectedOrder.municipality}, {selectedOrder.state}, C.P. {selectedOrder.postalCode}</p>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
+                                    <p>{selectedOrder.phone}</p>
+                                </div>
+                            </div>
+
+                            <Separator className="my-4 bg-gray-300" />
+                            
+                            <h3 className="font-bold uppercase text-center mb-2">Detalles del Pedido</h3>
+                            <Table>
+                                <TableHeader>
+                                <TableRow>
+                                    <TableHead>Descripción</TableHead>
+                                    <TableHead className="text-center">Cantidad</TableHead>
+                                    <TableHead className="text-right">P. Unitario</TableHead>
+                                    <TableHead className="text-right">Importe</TableHead>
+                                </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                {selectedOrder.materials.map((material: any, index: number) => {
+                                    const materialInfo = materialsList.find(m => m.name === material.name);
+                                    const unitPrice = materialInfo?.price || 0;
+                                    const subtotal = material.quantity * unitPrice;
+                                    return (
+                                    <TableRow key={index}>
+                                        <TableCell className="capitalize">{material.name}</TableCell>
+                                        <TableCell className="text-center">{material.quantity} {materialInfo?.unit}(s)</TableCell>
+                                        <TableCell className="text-right">${unitPrice.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">${subtotal.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                    )
+                                })}
+                                </TableBody>
+                                <TableFooter>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-right font-bold text-lg">Total del Pedido:</TableCell>
+                                    <TableCell className="text-right font-bold text-lg">${selectedOrder.total.toFixed(2)} MXN</TableCell>
+                                </TableRow>
+                                </TableFooter>
+                            </Table>
+                            
+                            <Separator className="my-4 bg-gray-300" />
+                            
+                            <div className="flex flex-col items-center">
+                                <h3 className="font-bold uppercase mb-2">Periodo de Entrega Programado</h3>
+                                <p>
+                                    Del {format(selectedOrder.deliveryDates.from.toDate(), 'PPP', { locale: es })} al {format(selectedOrder.deliveryDates.to.toDate(), 'PPP', { locale: es })}
+                                </p>
+                            </div>
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button onClick={generatePdf} disabled={isGeneratingPdf}>
+                                {isGeneratingPdf ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Generando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        Descargar PDF
+                                    </>
+                                )}
+                            </Button>
+                            <DialogClose asChild>
+                                <Button variant="outline">Cerrar</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </>
+                )}
+            </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
