@@ -53,7 +53,6 @@ export function LoginForm() {
         title: 'Inicio de Sesión Fallido',
         description: 'Correo electrónico o contraseña no válidos.',
       });
-      console.error('Login failed:', error);
     } finally {
       setIsLoading(false);
     }
