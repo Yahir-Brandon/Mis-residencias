@@ -393,6 +393,11 @@ export default function NewOrderPage() {
                             numberOfMonths={2}
                             locale={es}
                             className="p-4"
+                            classNames={{
+                              day_today: "bg-blue-500 text-white",
+                              day_range_start: "bg-red-500 text-white",
+                              day_range_end: "bg-green-500 text-white",
+                            }}
                           />
                           <DialogFooter>
                             <DialogClose asChild>
