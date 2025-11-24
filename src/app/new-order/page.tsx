@@ -12,7 +12,13 @@ import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { CalendarIcon, Plus } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
 
 const orderSchema = z.object({
   requesterName: z.string().min(1, { message: "El nombre es requerido." }),
@@ -24,6 +30,10 @@ const orderSchema = z.object({
   municipality: z.string().min(1, { message: "Debes seleccionar un municipio/delegación." }),
   material: z.string().min(1, { message: "Debes seleccionar un material." }),
   quantity: z.coerce.number().min(1, { message: "La cantidad debe ser al menos 1." }),
+  deliveryDates: z.object({
+    from: z.date({ required_error: "La fecha de inicio es requerida."}),
+    to: z.date({ required_error: "La fecha de fin es requerida."}),
+  }),
 });
 
 type Material = {
@@ -56,6 +66,10 @@ export default function NewOrderPage() {
       municipality: '',
       material: '',
       quantity: 1,
+      deliveryDates: {
+        from: undefined,
+        to: undefined
+      }
     },
   });
 
@@ -325,6 +339,55 @@ export default function NewOrderPage() {
                   Añadir Material
                 </Button>
               </div>
+
+              <h3 className="text-lg font-semibold border-b pb-2 pt-4">Cronograma de Entrega</h3>
+              <FormField
+                control={form.control}
+                name="deliveryDates"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fechas de Entrega</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[300px] justify-start text-left font-normal",
+                              !field.value.from && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value.from ? (
+                              field.value.to ? (
+                                <>
+                                  {format(field.value.from, "LLL dd, y")} -{" "}
+                                  {format(field.value.to, "LLL dd, y")}
+                                </>
+                              ) : (
+                                format(field.value.from, "LLL dd, y")
+                              )
+                            ) : (
+                              <span>Elige un rango de fechas</span>
+                            )}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          initialFocus
+                          mode="range"
+                          defaultMonth={field.value.from}
+                          selected={{from: field.value.from!, to: field.value.to}}
+                          onSelect={(dateRange) => field.onChange(dateRange)}
+                          numberOfMonths={2}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="flex justify-end pt-4">
                   <Button size="lg" type="submit" disabled={!form.formState.isValid}>
