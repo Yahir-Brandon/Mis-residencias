@@ -118,7 +118,7 @@ service cloud.firestore {
      */
     match /orders/{orderId} {
       allow get: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid);
-      allow list: if isAdmin(); // Solo los administradores pueden listar todos los pedidos.
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if isAdmin(); // Los administradores pueden cambiar el estado del pedido
       allow delete: if isAdmin(); // Los administradores pueden eliminar pedidos

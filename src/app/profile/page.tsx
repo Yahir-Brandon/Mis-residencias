@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity, Shield, Users, Briefcase } from "lucide-react";
+import { User, Mail, Phone, LogOut, PackagePlus, Shield, Users, Briefcase } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth, useUser, useFirestore } from "@/firebase";
@@ -13,6 +13,7 @@ import { doc, getDoc } from "firebase/firestore";
 import UserList from "@/components/admin/user-list";
 import BusinessList from "@/components/admin/business-list";
 import OrderList from "@/components/admin/order-list";
+import UserOrderList from "@/components/profile/user-order-list";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -163,9 +164,8 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        <div className="md:col-span-2">
-            <h2 className="text-3xl font-bold font-headline mb-6">Panel de Control</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="md:col-span-2 space-y-8">
+            <div className="grid grid-cols-1">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-sm font-medium">Nuevo Pedido</CardTitle>
@@ -179,27 +179,8 @@ export default function ProfilePage() {
                         </Button>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Pedidos Recientes</CardTitle>
-                        <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">0</div>
-                        <p className="text-xs text-muted-foreground">en el último mes</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Estatus de Cuenta</CardTitle>
-                        <Activity className="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">Activa</div>
-                        <p className="text-xs text-muted-foreground">desde Hoy</p>
-                    </CardContent>
-                </Card>
             </div>
+            <UserOrderList />
         </div>
       </div>
     </div>
