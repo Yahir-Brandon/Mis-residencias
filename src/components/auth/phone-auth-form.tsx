@@ -28,17 +28,15 @@ export function PhoneAuthForm() {
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  // Inicializar reCAPTCHA
+  // Declarar esto en el objeto window si se usa TypeScript
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA resuelto, permite signInWithPhoneNumber.
-        }
-      });
-    }
-  }, [auth]);
+    return () => {
+      // Limpiar el verificador de reCAPTCHA al desmontar el componente
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+      }
+    };
+  }, []);
 
   const phoneForm = useForm<z.infer<typeof phoneAuthSchema>>({
     resolver: zodResolver(phoneAuthSchema),
@@ -53,9 +51,20 @@ export function PhoneAuthForm() {
   async function onPhoneSubmit(values: z.infer<typeof phoneAuthSchema>) {
     setIsLoading(true);
     try {
-      const phoneNumber = `+52${values.phone}`;
+      // Asegurarse de que el contenedor reCAPTCHA esté limpio
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response: any) => {
+              // reCAPTCHA resuelto, permite signInWithPhoneNumber.
+            }
+        });
+      }
+      
       const appVerifier = window.recaptchaVerifier;
+      const phoneNumber = `+52${values.phone}`;
       const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      
       setConfirmationResult(confirmation);
       setStep('code');
       toast({
@@ -63,12 +72,16 @@ export function PhoneAuthForm() {
         description: 'Hemos enviado un código de verificación a tu teléfono.',
       });
     } catch (error: any) {
-      console.error('Error sending SMS:', error);
+      console.error('Error enviando SMS:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
         description: 'No se pudo enviar el código. Revisa el número e inténtalo de nuevo.',
       });
+       // En caso de error, limpia el recaptcha para que el usuario pueda intentarlo de nuevo
+       if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +98,7 @@ export function PhoneAuthForm() {
       });
       router.push('/profile');
     } catch (error: any) {
-      console.error('Error verifying code:', error);
+      console.error('Error verificando código:', error);
       toast({
         variant: 'destructive',
         title: 'Código Inválido',
@@ -160,7 +173,7 @@ export function PhoneAuthForm() {
   );
 }
 
-// Necesitas declarar esto en el objeto window si estás usando TypeScript
+// Se necesita declarar esto en el objeto window si se está usando TypeScript
 declare global {
     interface Window {
         recaptchaVerifier: RecaptchaVerifier;
