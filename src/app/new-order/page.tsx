@@ -12,6 +12,7 @@ import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Plus } from "lucide-react";
 
 const orderSchema = z.object({
   requesterName: z.string().min(1, { message: "El nombre es requerido." }),
@@ -316,6 +317,13 @@ export default function NewOrderPage() {
                     </div>
                   </>
                 )}
+              </div>
+              
+              <div className="flex justify-start pt-2">
+                <Button type="button" variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir Material
+                </Button>
               </div>
 
               <div className="flex justify-end pt-4">
