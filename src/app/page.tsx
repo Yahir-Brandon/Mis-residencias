@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ShieldCheck, Users, Truck, BrainCircuit } from 'lucide-react';
+import { ShieldCheck, Users, Truck, BrainCircuit, Gem, Zap, Shield, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,26 +31,30 @@ const whyChooseUs = [
   },
 ];
 
-const featuredMaterials = [
+const featuredQualities = [
     {
-      name: 'Cemento',
-      description: 'La base para cualquier construcción sólida y duradera. Ofrecemos las mejores marcas del mercado.',
+      name: 'Calidad Garantizada',
+      description: 'Seleccionamos solo los mejores materiales del mercado para asegurar que tu proyecto tenga una base sólida y confiable.',
       image: PlaceHolderImages.find((img) => img.id === 'cement'),
+      icon: <Gem className="h-8 w-8 text-primary" />,
     },
     {
-      name: 'Ladrillos',
-      description: 'Variedad de ladrillos y bloques para muros y fachadas con la resistencia que tu obra necesita.',
+      name: 'Durabilidad y Resistencia',
+      description: 'Nuestros productos están diseñados para resistir el paso del tiempo y las condiciones más exigentes.',
       image: PlaceHolderImages.find((img) => img.id === 'bricks'),
+      icon: <Shield className="h-8 w-8 text-primary" />,
     },
     {
-      name: 'Varillas de Acero',
-      description: 'El refuerzo esencial para estructuras de concreto, cumpliendo con todas las normativas de seguridad.',
+      name: 'Innovación en Materiales',
+      description: 'Estamos a la vanguardia, ofreciendo las soluciones más modernas y eficientes para todo tipo de construcción.',
       image: PlaceHolderImages.find((img) => img.id === 'rebar'),
+      icon: <Zap className="h-8 w-8 text-primary" />,
     },
     {
-      name: 'Madera para Construcción',
-      description: 'Madera de primera calidad, tratada para resistir y perfecta para cimbras, estructuras y acabados.',
+      name: 'Acabados Perfectos',
+      description: 'Logra resultados profesionales con nuestros materiales de primera, que garantizan un acabado impecable.',
       image: PlaceHolderImages.find((img) => img.id === 'wood'),
+      icon: <Star className="h-8 w-8 text-primary" />,
     },
 ];
 
@@ -110,34 +114,38 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="featured-materials" className="py-16 md:py-24 bg-secondary">
+      <section id="featured-qualities" className="py-16 md:py-24 bg-secondary">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-headline font-bold text-center mb-12">
-            Nuestros Materiales Destacados
+            Calidad que Construye Confianza
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredMaterials.map((material, index) => (
+            {featuredQualities.map((quality, index) => (
               <Card 
-                key={material.name}
+                key={quality.name}
                 className="overflow-hidden flex flex-col transform hover:scale-105 transition-transform duration-300 shadow-lg"
                 style={{ animationDelay: `${200 * (index + 2)}ms` }}
               >
-                {material.image && (
+                {quality.image && (
                     <div className="relative h-48 w-full">
                         <Image
-                            src={material.image.imageUrl}
-                            alt={material.image.description}
+                            src={quality.image.imageUrl}
+                            alt={quality.image.description}
                             fill
                             className="object-cover"
-                            data-ai-hint={material.image.imageHint}
+                            data-ai-hint={quality.image.imageHint}
                         />
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                         <div className="absolute bottom-4 left-4 text-white">
+                           {quality.icon}
+                         </div>
                     </div>
                 )}
                 <CardHeader>
-                  <CardTitle>{material.name}</CardTitle>
+                  <CardTitle>{quality.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <CardDescription>{material.description}</CardDescription>
+                  <CardDescription>{quality.description}</CardDescription>
                 </CardContent>
                 <CardFooter>
                   <Button asChild className="w-full font-bold">
