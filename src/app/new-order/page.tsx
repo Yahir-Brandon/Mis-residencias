@@ -23,6 +23,7 @@ import { analyzeDeliveryDate } from "@/ai/flows/analyze-delivery-date-flow";
 
 const orderSchema = z.object({
   requesterName: z.string().min(1, { message: "El nombre es requerido." }),
+  projectName: z.string().min(1, { message: "El nombre de la obra es requerido." }),
   phone: z.string().min(10, { message: "El teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, { message: "Solo se permiten números." }),
   street: z.string().min(1, { message: "La calle es requerida." }),
   number: z.string().min(1, {message: 'El número exterior es requerido.'}).regex(/^\d+$/, { message: "Solo se permiten números." }),
@@ -62,6 +63,7 @@ export default function NewOrderPage() {
     resolver: zodResolver(orderSchema),
     defaultValues: {
       requesterName: '',
+      projectName: '',
       phone: '',
       street: '',
       number: '',
@@ -152,6 +154,19 @@ export default function NewOrderPage() {
                       <FormLabel>Nombre del Solicitante</FormLabel>
                       <FormControl>
                         <Input placeholder="Juan Pérez" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="projectName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre de la Obra</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Torre Reforma" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -428,8 +443,8 @@ export default function NewOrderPage() {
                             disabled={{ before: new Date() }}
                             classNames={{
                               day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                              day_range_start: "bg-red-500 text-white hover:bg-red-600",
-                              day_range_end: "bg-green-500 text-white hover:bg-green-600",
+                              day_range_start: "day-range-start",
+                              day_range_end: "day-range-end",
                             }}
                           />
                           <DialogFooter>
