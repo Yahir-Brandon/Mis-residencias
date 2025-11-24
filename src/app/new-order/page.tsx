@@ -21,7 +21,10 @@ const orderSchema = z.object({
   postalCode: z.string().min(5, { message: "El código postal debe tener 5 dígitos." }).regex(/^\d+$/, { message: "Solo se permiten números." }),
   state: z.string().min(1, { message: "Debes seleccionar un estado." }),
   municipality: z.string().min(1, { message: "Debes seleccionar un municipio/delegación." }),
+  material: z.string().min(1, { message: "Debes seleccionar un material." }),
 });
+
+const materials = ["cemento", "mortero", "cal", "alambre"];
 
 export default function NewOrderPage() {
   const { toast } = useToast();
@@ -37,6 +40,7 @@ export default function NewOrderPage() {
       postalCode: '',
       state: '',
       municipality: '',
+      material: '',
     },
   });
 
@@ -219,6 +223,31 @@ export default function NewOrderPage() {
                 />
               </div>
               
+              <h3 className="text-lg font-semibold border-b pb-2 pt-4">Pedido de Material</h3>
+
+              <FormField
+                control={form.control}
+                name="material"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Material</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un material" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {materials.map(material => (
+                          <SelectItem key={material} value={material} className="capitalize">{material}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="flex justify-end pt-4">
                   <Button size="lg" type="submit">
                       Enviar Pedido
