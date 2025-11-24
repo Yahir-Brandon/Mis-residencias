@@ -129,7 +129,7 @@ export default function ProfilePage() {
               </Sidebar>
               <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
                   <div className="flex items-center gap-4 mb-6">
-                    <SidebarTrigger className="md:hidden"/>
+                    <SidebarTrigger />
                     <h1 className="text-2xl md:text-3xl font-bold font-headline">Administrador General</h1>
                   </div>
                   <div className="space-y-8">
