@@ -73,7 +73,7 @@ export default function NewOrderPage() {
       state: '',
       municipality: '',
       material: '',
-      quantity: '' as any, // Initialize as empty string to be a controlled component
+      quantity: '',
       deliveryDates: {
         from: undefined,
         to: undefined
@@ -354,14 +354,8 @@ export default function NewOrderPage() {
                               inputMode="numeric"
                               placeholder="0"
                               {...field}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                // Allow empty string or numbers
-                                if (value === '' || /^\d*$/.test(value)) {
-                                  field.onChange(value === '' ? '' : Number(value));
-                                }
-                              }}
-                              value={field.value === 0 ? '' : field.value}
+                              onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                              value={field.value}
                             />
                           </FormControl>
                           <FormMessage />
@@ -378,13 +372,6 @@ export default function NewOrderPage() {
                     </div>
                   </>
                 )}
-              </div>
-              
-              <div className="flex justify-start pt-2">
-                <Button type="button" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Añadir Material
-                </Button>
               </div>
 
               <h3 className="text-lg font-semibold border-b pb-2 pt-4">Cronograma de Entrega</h3>
