@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
 import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { Loader2, FileDown, Home } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
@@ -59,7 +57,7 @@ function OrderSummaryContent() {
 
     try {
       const { default: jsPDF } = await import('jspdf');
-      const autoTable = (await import('jspdf-autotable')).default;
+      const { default: autoTable } = await import('jspdf-autotable');
 
       const doc = new jsPDF();
       const deliveryStart = new Date(orderData.deliveryDates.from);
@@ -102,17 +100,18 @@ function OrderSummaryContent() {
       doc.setFont('helvetica', 'bold');
       doc.text('Detalles del Pedido', 14, lastY + 10);
 
-      const materialInfo = materialsList.find(m => m.name === orderData.material);
-      const unitPrice = materialInfo?.price || 0;
-      const subtotal = orderData.quantity * unitPrice;
-      
       const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
-      const tableRows = [[
-        orderData.material,
-        `${orderData.quantity} ${orderData.unit}(s)`,
-        `$${unitPrice.toFixed(2)}`,
-        `$${subtotal.toFixed(2)}`
-      ]];
+      const tableRows = orderData.materials.map((material: any) => {
+        const materialInfo = materialsList.find(m => m.name === material.name);
+        const unitPrice = materialInfo?.price || 0;
+        const subtotal = material.quantity * unitPrice;
+        return [
+            material.name,
+            `${material.quantity} ${materialInfo?.unit}(s)`,
+            `$${unitPrice.toFixed(2)}`,
+            `$${subtotal.toFixed(2)}`
+        ];
+      });
 
       autoTable(doc, {
         startY: lastY + 15,
@@ -259,20 +258,13 @@ function OrderSummaryContent() {
     postalCode,
     state,
     municipality,
-    material,
-    quantity,
-    unit,
+    materials,
     deliveryDates,
     total,
   } = orderData;
   
   const deliveryStart = new Date(deliveryDates.from);
   const deliveryEnd = new Date(deliveryDates.to);
-
-  const materialInfo = materialsList.find(m => m.name === material);
-  const unitPrice = materialInfo?.price || 0;
-  const subtotal = quantity * unitPrice;
-
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
@@ -325,12 +317,19 @@ function OrderSummaryContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="capitalize">{material}</TableCell>
-                    <TableCell className="text-center">{quantity} {unit}(s)</TableCell>
-                    <TableCell className="text-right">${unitPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${subtotal.toFixed(2)}</TableCell>
-                  </TableRow>
+                  {materials.map((material: any, index: number) => {
+                    const materialInfo = materialsList.find(m => m.name === material.name);
+                    const unitPrice = materialInfo?.price || 0;
+                    const subtotal = material.quantity * unitPrice;
+                    return (
+                      <TableRow key={index}>
+                        <TableCell className="capitalize">{material.name}</TableCell>
+                        <TableCell className="text-center">{material.quantity} {materialInfo?.unit}(s)</TableCell>
+                        <TableCell className="text-right">${unitPrice.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${subtotal.toFixed(2)}</TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
                 <TableFooter>
                   <TableRow>

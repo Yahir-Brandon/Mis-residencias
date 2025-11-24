@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, Plus, BrainCircuit } from "lucide-react";
+import { CalendarIcon, Plus, BrainCircuit, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -21,6 +21,11 @@ import { cn } from "@/lib/utils";
 import { analyzeDeliveryDate } from "@/ai/flows/analyze-delivery-date-flow";
 import { useRouter } from "next/navigation";
 
+
+const materialOrderSchema = z.object({
+  name: z.string().min(1, { message: "Debes seleccionar un material." }),
+  quantity: z.coerce.number().min(1, { message: "La cantidad debe ser mayor a 0." }),
+});
 
 const orderSchema = z.object({
   requesterName: z.string().min(1, { message: "El nombre es requerido." }),
@@ -31,8 +36,7 @@ const orderSchema = z.object({
   postalCode: z.string().min(5, { message: "El código postal debe tener 5 dígitos." }).regex(/^\d+$/, { message: "Solo se permiten números." }),
   state: z.string().min(1, { message: "Debes seleccionar un estado." }),
   municipality: z.string().min(1, { message: "Debes seleccionar un municipio/delegación." }),
-  material: z.string().min(1, { message: "Debes seleccionar un material." }),
-  quantity: z.coerce.number().min(1, { message: "La cantidad debe ser mayor a 0." }),
+  materials: z.array(materialOrderSchema).min(1, { message: "Debes añadir al menos un material." }),
   deliveryDates: z.object({
     from: z.date({ required_error: "La fecha de inicio es requerida."}),
     to: z.date({ required_error: "La fecha de fin es requerida."}),
@@ -45,7 +49,7 @@ type Material = {
   unit: string;
 };
 
-const materials: Material[] = [
+const materialsList: Material[] = [
   { name: "cemento", price: 250, unit: "bulto" },
   { name: "mortero", price: 220, unit: "bulto" },
   { name: "cal", price: 80, unit: "bulto" },
@@ -53,10 +57,8 @@ const materials: Material[] = [
 ];
 
 export default function NewOrderPage() {
-  const { toast } = useToast();
   const router = useRouter();
   const [selectedState, setSelectedState] = useState<State | null>(null);
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [deliveryAnalysis, setDeliveryAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -72,8 +74,7 @@ export default function NewOrderPage() {
       postalCode: '',
       state: '',
       municipality: '',
-      material: '',
-      quantity: '',
+      materials: [{ name: '', quantity: '' as any }],
       deliveryDates: {
         from: undefined,
         to: undefined
@@ -81,9 +82,20 @@ export default function NewOrderPage() {
     },
   });
 
-  const quantity = form.watch('quantity');
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "materials"
+  });
+
+  const watchMaterials = form.watch('materials');
   const deliveryDates = form.watch('deliveryDates');
-  const total = selectedMaterial ? (Number(quantity) || 0) * selectedMaterial.price : 0;
+
+  const total = watchMaterials.reduce((acc, current) => {
+    const materialInfo = materialsList.find(m => m.name === current.name);
+    const price = materialInfo?.price || 0;
+    const quantity = Number(current.quantity) || 0;
+    return acc + (price * quantity);
+  }, 0);
 
 
   useEffect(() => {
@@ -118,14 +130,8 @@ export default function NewOrderPage() {
     form.setValue('municipality', ''); // Reset municipality on state change
   };
 
-  const handleMaterialChange = (materialName: string) => {
-    const materialData = materials.find(m => m.name === materialName) || null;
-    setSelectedMaterial(materialData);
-    form.setValue('material', materialName);
-  };
-
   function onSubmit(values: z.infer<typeof orderSchema>) {
-    const orderData = { ...values, total, unit: selectedMaterial?.unit };
+    const orderData = { ...values, total };
     const queryString = encodeURIComponent(JSON.stringify(orderData));
     router.push(`/order-summary?data=${queryString}`);
   }
@@ -308,69 +314,107 @@ export default function NewOrderPage() {
               
               <h3 className="text-lg font-semibold border-b pb-2 pt-4">Pedido de Material</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                <FormField
-                  control={form.control}
-                  name="material"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-1">
-                      <FormLabel>Material</FormLabel>
-                      <Select onValueChange={(value) => handleMaterialChange(value)} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona un material" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {materials.map(material => (
-                            <SelectItem key={material.name} value={material.name} className="capitalize">{material.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                {selectedMaterial && (
-                  <>
-                    <div className="space-y-2">
-                        <Label>Precio Unitario</Label>
-                        <Input 
-                          readOnly 
-                          value={`$${selectedMaterial.price.toFixed(2)} / ${selectedMaterial.unit}`} 
-                          className="bg-muted"
-                        />
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="quantity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Cantidad</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              inputMode="numeric"
-                              placeholder="0"
-                              {...field}
-                              onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
-                              value={field.value}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+              <div className="space-y-4">
+                {fields.map((field, index) => {
+                   const selectedMaterialInfo = materialsList.find(m => m.name === watchMaterials[index]?.name);
+                   const subtotal = (Number(watchMaterials[index]?.quantity) || 0) * (selectedMaterialInfo?.price || 0);
+
+                  return (
+                    <div key={field.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-4 border rounded-lg relative">
+                      <FormField
+                        control={form.control}
+                        name={`materials.${index}.name`}
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-3">
+                            <FormLabel>Material</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecciona" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {materialsList.map(material => (
+                                  <SelectItem key={material.name} value={material.name} className="capitalize">{material.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="space-y-2 md:col-span-2">
+                          <Label>P. Unitario</Label>
+                          <Input 
+                            readOnly 
+                            value={selectedMaterialInfo ? `$${selectedMaterialInfo.price.toFixed(2)} / ${selectedMaterialInfo.unit}`: '$0.00'} 
+                            className="bg-muted"
+                          />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name={`materials.${index}.quantity`}
+                        render={({ field }) => (
+                          <FormItem className="md:col-span-2">
+                            <FormLabel>Cantidad</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder="0"
+                                {...field}
+                                value={field.value}
+                                onChange={(e) => field.onChange(e.target.value === '' ? '' : Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="space-y-2 md:col-span-2">
+                          <Label>Subtotal</Label>
+                          <Input 
+                            readOnly 
+                            value={`$${subtotal.toFixed(2)}`} 
+                            className="bg-muted font-bold"
+                          />
+                      </div>
+
+                      {fields.length > 1 && (
+                         <div className="md:col-span-1">
+                          <Button variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10">
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </div>
                       )}
-                    />
-                    <div className="space-y-2">
-                        <Label>Total</Label>
-                        <Input 
-                          readOnly 
-                          value={`$${total.toFixed(2)}`} 
-                          className="bg-muted font-bold text-lg"
-                        />
                     </div>
-                  </>
+                  )
+                })}
+
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => append({ name: '', quantity: '' as any })}
+                  className="w-full md:w-auto"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Añadir otro material
+                </Button>
+
+                {watchMaterials.length > 0 && (
+                   <div className="flex justify-end pt-4">
+                      <div className="w-full md:w-1/4">
+                          <Label className="text-lg font-semibold">Total del Pedido</Label>
+                          <Input 
+                            readOnly 
+                            value={`$${total.toFixed(2)}`} 
+                            className="bg-muted font-bold text-2xl h-12 mt-2"
+                          />
+                      </div>
+                  </div>
                 )}
               </div>
 
