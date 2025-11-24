@@ -19,7 +19,7 @@ import { es } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { analyzeDeliveryDate } from "@/ai/flows/analyze-delivery-date-flow";
 import { useRouter } from "next/navigation";
-import { useAuth, useFirestore, useUser } from "@/firebase";
+import { useFirestore, useUser } from "@/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -145,7 +145,7 @@ export default function NewOrderPage() {
   };
 
   async function onSubmit(values: z.infer<typeof orderSchema>) {
-    if (!user || !deliveryAnalysis) return;
+    if (!user || !firestore || !deliveryAnalysis) return;
     setIsSubmitting(true);
     
     const orderData = { 
@@ -157,35 +157,35 @@ export default function NewOrderPage() {
       createdAt: serverTimestamp(),
      };
 
-    try {
-        const ordersCollectionRef = collection(firestore, 'orders');
-        const docRef = await addDoc(ordersCollectionRef, orderData)
-        .catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: ordersCollectionRef.path,
-                operation: 'create',
-                requestResourceData: orderData
-            }));
-            throw error;
-        });
-
+    const ordersCollectionRef = collection(firestore, 'orders');
+    
+    addDoc(ordersCollectionRef, orderData)
+      .then((docRef) => {
         toast({
             title: "Pedido Enviado",
             description: "Tu pedido se ha guardado correctamente.",
         });
-
         router.push(`/order-summary?id=${docRef.id}`);
-
-    } catch(error) {
+      })
+      .catch((error) => {
         console.error("Error al guardar el pedido:", error);
+        
+        // Emitir error contextual para depuración
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: ordersCollectionRef.path,
+            operation: 'create',
+            requestResourceData: orderData
+        }));
+
         toast({
             variant: "destructive",
             title: "Error al enviar el pedido",
-            description: "No se pudo guardar tu pedido. Por favor, intenta de nuevo.",
+            description: "No se pudo guardar tu pedido. Por favor, revisa tus permisos e intenta de nuevo.",
         });
-    } finally {
+      })
+      .finally(() => {
         setIsSubmitting(false);
-    }
+      });
   }
 
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
