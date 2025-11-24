@@ -35,7 +35,6 @@
       },
       "required": [
         "id",
-        "email",
         "userType"
       ]
     },
@@ -119,7 +118,8 @@
   },
   "auth": {
     "providers": [
-      "password"
+      "password",
+      "phone"
     ]
   },
   "firestore": {
