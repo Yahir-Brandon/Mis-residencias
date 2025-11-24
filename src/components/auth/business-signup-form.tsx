@@ -3,11 +3,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -16,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { businessSignupSchema } from '@/lib/auth-validation';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export function BusinessSignupForm() {
   const { toast } = useToast();
@@ -28,6 +31,7 @@ export function BusinessSignupForm() {
       rfc: '',
       phone: '',
       password: '',
+      acceptTerms: false,
     },
   });
 
@@ -121,6 +125,39 @@ export function BusinessSignupForm() {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="acceptTerms"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>
+                  Acepto los términos y condiciones.
+                </FormLabel>
+                <FormDescription>
+                  Al registrarte, aceptas nuestros{' '}
+                  <Link href="/terms" className="underline hover:text-primary">
+                    Términos de Servicio
+                  </Link>{' '}
+                  y{' '}
+                  <Link href="/privacy" className="underline hover:text-primary">
+                    Política de Privacidad
+                  </Link>
+                  .
+                </FormDescription>
+                 <FormMessage />
+              </div>
+            </FormItem>
+          )}
+        />
+
         <Button type="submit" className="w-full font-bold">
           Crear Cuenta de Empresa
         </Button>
