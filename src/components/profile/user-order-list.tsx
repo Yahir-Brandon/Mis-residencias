@@ -36,8 +36,8 @@ export default function UserOrderList() {
   }, [firestore, user]);
 
   const { data: orders, isLoading, error } = useCollection(userOrdersQuery, {
-    disabled: !user, // Explicitly disable the hook if there is no user
-  } as any);
+    disabled: !user,
+  });
 
   return (
     <Card>
