@@ -12,6 +12,8 @@ import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 
 // Augment jsPDF with the autoTable method
@@ -56,9 +58,6 @@ function OrderSummaryContent() {
     setIsGeneratingPdf(true);
 
     try {
-      const { default: jsPDF } = await import('jspdf');
-      const { default: autoTable } = await import('jspdf-autotable');
-
       const doc = new jsPDF();
       const deliveryStart = new Date(orderData.deliveryDates.from);
       const deliveryEnd = new Date(orderData.deliveryDates.to);
@@ -79,7 +78,7 @@ function OrderSummaryContent() {
         { title: 'Teléfono:', content: orderData.phone },
       ];
 
-      autoTable(doc, {
+      doc.autoTable({
         startY: 30,
         body: details,
         theme: 'plain',
@@ -113,7 +112,7 @@ function OrderSummaryContent() {
         ];
       });
 
-      autoTable(doc, {
+      doc.autoTable({
         startY: lastY + 15,
         head: [tableColumn],
         body: tableRows,
@@ -396,3 +395,5 @@ export default function OrderSummaryPage() {
         </Suspense>
     )
 }
+
+    

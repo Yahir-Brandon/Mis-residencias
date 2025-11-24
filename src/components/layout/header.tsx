@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ThemeToggle } from '../theme-toggle';
 import { useEffect, useState } from 'react';
-import { User } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function Header() {
@@ -34,17 +34,23 @@ export function Header() {
           {isAuthenticated ? (
             <>
               <Button variant="ghost" asChild>
-                <Link href="/profile">
-                  <User className="mr-2 h-4 w-4" />
-                  Perfil
+                <Link href="/profile" className='flex items-center gap-2'>
+                  <User />
+                  <span className="hidden sm:inline">Perfil</span>
                 </Link>
               </Button>
-              <Button onClick={handleLogout}>Cerrar Sesión</Button>
+              <Button onClick={handleLogout} size="sm">
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Cerrar Sesión</span>
+                </Button>
             </>
           ) : (
             <>
               <Button variant="ghost" asChild>
-                <Link href="/login">Iniciar Sesión</Link>
+                <Link href="/login">
+                  <span className="hidden sm:inline">Iniciar Sesión</span>
+                   <User className="sm:hidden" />
+                </Link>
               </Button>
               <Button asChild>
                 <Link href="/signup">Regístrate</Link>
@@ -56,3 +62,5 @@ export function Header() {
     </header>
   );
 }
+
+    

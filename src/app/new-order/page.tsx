@@ -406,7 +406,7 @@ export default function NewOrderPage() {
 
                 {watchMaterials.length > 0 && (
                    <div className="flex justify-end pt-4">
-                      <div className="w-full md:w-1/4">
+                      <div className="w-full md:w-1/3">
                           <Label className="text-lg font-semibold">Total del Pedido</Label>
                           <Input 
                             readOnly 
@@ -451,7 +451,7 @@ export default function NewOrderPage() {
                           </Button>
                         </FormControl>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-4xl flex justify-center">
+                      <DialogContent className="w-auto sm:max-w-4xl flex justify-center">
                         <div className="flex flex-col items-center">
                           <DialogHeader>
                             <DialogTitle>Selecciona las Fechas</DialogTitle>
@@ -529,3 +529,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
