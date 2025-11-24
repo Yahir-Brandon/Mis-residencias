@@ -82,13 +82,14 @@ export default function OrderList() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  // Esta consulta ahora solo es para la lista de administradores, que puede consultar la raíz
   const ordersCollectionRef = useMemoFirebase(() => query(collection(firestore, 'orders'), orderBy('createdAt', 'desc')), [firestore]);
   const { data: orders, isLoading, error } = useCollection(ordersCollectionRef);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    const orderDocRef = doc(firestore, 'orders', orderId);
+  const handleStatusChange = async (userId: string, orderId: string, newStatus: OrderStatus) => {
+    const orderDocRef = doc(firestore, 'users', userId, 'orders', orderId);
     try {
         await updateDoc(orderDocRef, { status: newStatus })
         .catch(error => {
@@ -114,8 +115,8 @@ export default function OrderList() {
     }
   }
 
-  const handleDeleteOrder = async (orderId: string) => {
-    const orderDocRef = doc(firestore, 'orders', orderId);
+  const handleDeleteOrder = async (userId: string, orderId: string) => {
+    const orderDocRef = doc(firestore, 'users', userId, 'orders', orderId);
     try {
         await deleteDoc(orderDocRef)
         .catch(error => {
@@ -313,20 +314,20 @@ export default function OrderList() {
                             </DropdownMenuItem>
                             </DialogTrigger>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'En proceso')}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order.userId, order.id, 'En proceso')}>
                                 <Package className="mr-2 h-4 w-4" />
                                 Marcar como "En proceso"
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'Enviado')}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order.userId, order.id, 'Enviado')}>
                                 <Truck className="mr-2 h-4 w-4" />
                                 Marcar como "Enviado"
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'Entregado')}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order.userId, order.id, 'Entregado')}>
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Marcar como "Entregado"
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" onClick={() => handleStatusChange(order.id, 'Cancelado')}>
+                            <DropdownMenuItem className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" onClick={() => handleStatusChange(order.userId, order.id, 'Cancelado')}>
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Cancelar Pedido
                             </DropdownMenuItem>
@@ -346,7 +347,7 @@ export default function OrderList() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteOrder(order.id)} className="bg-destructive hover:bg-destructive/90">
+                                    <AlertDialogAction onClick={() => handleDeleteOrder(order.userId, order.id)} className="bg-destructive hover:bg-destructive/90">
                                         Sí, borrar pedido
                                     </AlertDialogAction>
                                     </AlertDialogFooter>

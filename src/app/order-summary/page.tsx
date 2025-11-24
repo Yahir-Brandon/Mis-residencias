@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Calendar } from '@/components/ui/calendar';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 
@@ -37,12 +37,16 @@ function OrderSummaryContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const firestore = useFirestore();
+  const { user } = useUser();
 
-  const orderId = searchParams.get('id');
+  const userId = searchParams.get('userId');
+  const orderId = searchParams.get('orderId');
 
   const orderDocRef = useMemoFirebase(() => {
-    return orderId ? doc(firestore, 'orders', orderId) : null;
-  }, [firestore, orderId]);
+    // El administrador puede pasar cualquier userId, el usuario normal solo puede usar el suyo
+    const effectiveUserId = user?.uid === userId || user?.providerData.some(p => p.providerId === 'admin') ? userId : user?.uid;
+    return (effectiveUserId && orderId) ? doc(firestore, 'users', effectiveUserId, 'orders', orderId) : null;
+  }, [firestore, orderId, userId, user]);
   
   const { data: orderData, isLoading: isOrderLoading, error } = useDoc(orderDocRef);
 
@@ -51,7 +55,8 @@ function OrderSummaryContent() {
 
   useEffect(() => {
     if (error) {
-        router.push('/new-order');
+        console.error("Error al cargar el pedido:", error);
+        router.push('/profile');
     }
   }, [error, router]);
 

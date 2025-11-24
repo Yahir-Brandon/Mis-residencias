@@ -157,7 +157,7 @@ export default function NewOrderPage() {
       createdAt: serverTimestamp(),
      };
 
-    const ordersCollectionRef = collection(firestore, 'orders');
+    const ordersCollectionRef = collection(firestore, 'users', user.uid, 'orders');
     
     addDoc(ordersCollectionRef, orderData)
       .then((docRef) => {
@@ -165,7 +165,7 @@ export default function NewOrderPage() {
             title: "Pedido Enviado",
             description: "Tu pedido se ha guardado correctamente.",
         });
-        router.push(`/order-summary?id=${docRef.id}`);
+        router.push(`/order-summary?userId=${user.uid}&orderId=${docRef.id}`);
       })
       .catch((error) => {
         console.error("Error al guardar el pedido:", error);

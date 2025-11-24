@@ -1,6 +1,6 @@
 'use client';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, AlertTriangle, ShoppingCart, Eye } from 'lucide-react';
@@ -27,9 +27,9 @@ export default function UserOrderList() {
 
   const userOrdersQuery = useMemoFirebase(() => {
     if (!user) return null;
+    // La consulta ahora apunta a la subcolección anidada.
     return query(
-      collection(firestore, 'orders'),
-      where('userId', '==', user.uid),
+      collection(firestore, 'users', user.uid, 'orders'),
       orderBy('createdAt', 'desc')
     );
   }, [firestore, user]);
@@ -108,7 +108,7 @@ export default function UserOrderList() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="outline" size="sm" onClick={() => router.push(`/order-summary?id=${order.id}`)}>
+                  <Button variant="outline" size="sm" onClick={() => router.push(`/order-summary?userId=${user?.uid}&orderId=${order.id}`)}>
                     <Eye className="mr-2 h-4 w-4" />
                     Ver Resumen
                   </Button>

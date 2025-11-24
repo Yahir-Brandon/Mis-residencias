@@ -6,15 +6,15 @@
  *
  * Estructura de Datos:
  * - /users/{userId}: Datos comunes del usuario (ej. email, userType). El ID del documento es el UID de autenticación.
+ * - /users/{userId}/orders/{orderId}: Almacena pedidos de clientes, anidados bajo el usuario.
  * - /businesses/{userId}: Almacena datos específicos de empresas para usuarios de tipo empresa.
  * - /products/{productId}: Almacena listados de productos, que son públicos.
- * - /orders/{orderId}: Almacena pedidos de clientes.
  *
  * Decisiones Clave de Seguridad:
- * - Propiedad Basada en la Ruta: Todos los datos específicos del usuario se almacenan en documentos
- *   donde el ID coincide con el UID de autenticación del usuario.
+ * - Propiedad Basada en la Ruta: Todos los datos específicos del usuario (incluidos los pedidos) se almacenan en documentos
+ *   o subcolecciones donde la ruta contiene el UID de autenticación del usuario.
  * - Acceso de Lectura para Administradores: Los usuarios con `userType == 'admin'` pueden leer todos los documentos
- *   en las colecciones `/users`, `/businesses` y `/orders` pero no pueden escribir en ellos (excepto sus propios datos).
+ *   en las colecciones `/users`, `/businesses` y todas las subcolecciones de `orders` pero no pueden escribir en ellos (excepto sus propios datos).
  *   proporciona supervisión del sistema sin permitir suplantación o manipulación de datos.
  * - Listado de Usuarios Restringido: Los usuarios regulares no pueden listar el contenido de las
  *   colecciones '/users' o '/businesses' para proteger la privacidad.
@@ -23,7 +23,7 @@
  * - Visibilidad Pública de Productos: La colección '/products' es de lectura pública.
  * - Acceso de Escritura a Productos Restringido: Todas las operaciones de escritura en productos
  *   están deshabilitadas como una medida de seguridad por defecto.
- * - Propiedad de Pedidos: Los usuarios solo pueden crear pedidos para sí mismos y leer sus propios pedidos.
+ * - Propiedad de Pedidos: Los usuarios solo pueden crear y leer sus propios pedidos a través de la ruta anidada.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -62,7 +62,7 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
 
     /**
-     * @description Controla el acceso a los perfiles de usuario individuales.
+     * @description Controla el acceso a los perfiles de usuario individuales y sus subcolecciones.
      * El ID del documento debe ser el UID del usuario.
      * @path /users/{userId}
      */
@@ -72,6 +72,21 @@ service cloud.firestore {
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isOwner(userId);
+
+      // ----------------------------------------------------------------------
+      // Subcolección: orders
+      // ----------------------------------------------------------------------
+
+      /**
+       * @description Controla el acceso a los pedidos de los clientes, anidados bajo cada usuario.
+       * @path /users/{userId}/orders/{orderId}
+       */
+      match /orders/{orderId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isOwner(userId) || isAdmin(); // Usuario o admin puede cambiar el estado
+        allow delete: if isAdmin(); // Solo los administradores pueden eliminar pedidos
+      }
     }
 
     // ----------------------------------------------------------------------
@@ -107,21 +122,12 @@ service cloud.firestore {
       allow get, list: if true; // Lectura pública
       allow create, update, delete: if false;
     }
-
-    // ----------------------------------------------------------------------
-    // Colección: orders
-    // ----------------------------------------------------------------------
-
-    /**
-     * @description Controla el acceso a los pedidos de los clientes.
-     * @path /orders/{orderId}
-     */
+    
+    // La colección /orders a nivel raíz ya no se utiliza para el control de acceso principal.
+    // Se puede dejar una regla restrictiva o eliminarla.
+    // Por seguridad, se agrega una regla para denegar todo por defecto a nivel raíz si se crea accidentalmente.
     match /orders/{orderId} {
-      allow get: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid);
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin(); // Los administradores pueden cambiar el estado del pedido
-      allow delete: if isAdmin(); // Los administradores pueden eliminar pedidos
+      allow read, write: if false;
     }
   }
 }
