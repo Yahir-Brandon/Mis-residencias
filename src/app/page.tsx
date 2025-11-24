@@ -35,25 +35,21 @@ const featuredQualities = [
     {
       name: 'Calidad Garantizada',
       description: 'Seleccionamos solo los mejores materiales del mercado para asegurar que tu proyecto tenga una base sólida y confiable.',
-      image: PlaceHolderImages.find((img) => img.id === 'cement'),
       icon: <Gem className="h-8 w-8 text-primary" />,
     },
     {
       name: 'Durabilidad y Resistencia',
       description: 'Nuestros productos están diseñados para resistir el paso del tiempo y las condiciones más exigentes.',
-      image: PlaceHolderImages.find((img) => img.id === 'bricks'),
       icon: <Shield className="h-8 w-8 text-primary" />,
     },
     {
       name: 'Innovación en Materiales',
       description: 'Estamos a la vanguardia, ofreciendo las soluciones más modernas y eficientes para todo tipo de construcción.',
-      image: PlaceHolderImages.find((img) => img.id === 'rebar'),
       icon: <Zap className="h-8 w-8 text-primary" />,
     },
     {
       name: 'Acabados Perfectos',
       description: 'Logra resultados profesionales con nuestros materiales de primera, que garantizan un acabado impecable.',
-      image: PlaceHolderImages.find((img) => img.id === 'wood'),
       icon: <Star className="h-8 w-8 text-primary" />,
     },
 ];
@@ -126,23 +122,11 @@ export default function Home() {
                 className="overflow-hidden flex flex-col transform hover:scale-105 transition-transform duration-300 shadow-lg"
                 style={{ animationDelay: `${200 * (index + 2)}ms` }}
               >
-                {quality.image && (
-                    <div className="relative h-48 w-full">
-                        <Image
-                            src={quality.image.imageUrl}
-                            alt={quality.image.description}
-                            fill
-                            className="object-cover"
-                            data-ai-hint={quality.image.imageHint}
-                        />
-                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                         <div className="absolute bottom-4 left-4 text-white">
-                           {quality.icon}
-                         </div>
-                    </div>
-                )}
                 <CardHeader>
-                  <CardTitle>{quality.name}</CardTitle>
+                  <div className="flex items-center gap-4">
+                    {quality.icon}
+                    <CardTitle>{quality.name}</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <CardDescription>{quality.description}</CardDescription>
