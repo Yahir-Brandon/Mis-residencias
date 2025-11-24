@@ -120,7 +120,8 @@ service cloud.firestore {
       allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow list: if isAdmin(); // Solo los administradores pueden listar todos los pedidos.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if false; // Los pedidos no se pueden modificar ni eliminar por ahora.
+      allow update: if isAdmin(); // Los administradores pueden cambiar el estado del pedido
+      allow delete: if isAdmin(); // Los administradores pueden eliminar pedidos
     }
   }
 }

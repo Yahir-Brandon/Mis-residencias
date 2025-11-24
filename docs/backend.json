@@ -179,6 +179,10 @@
           "type": "string",
           "enum": ["Urgente", "Pronto", "Normal"]
         },
+        "status": {
+          "type": "string",
+          "enum": ["Pendiente", "En proceso", "Enviado", "Entregado", "Cancelado"]
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -186,7 +190,7 @@
         }
       },
       "required": [
-        "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "createdAt"
+        "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "status", "createdAt"
       ]
     }
   },

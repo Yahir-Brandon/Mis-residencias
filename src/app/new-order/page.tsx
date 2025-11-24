@@ -153,6 +153,7 @@ export default function NewOrderPage() {
       total,
       userId: user.uid,
       priority: deliveryAnalysis,
+      status: 'Pendiente',
       createdAt: serverTimestamp(),
      };
 
