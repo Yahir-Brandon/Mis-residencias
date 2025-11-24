@@ -146,7 +146,15 @@ export function PersonalSignupForm() {
             <FormItem>
               <FormLabel>Número de Teléfono</FormLabel>
               <FormControl>
-                <Input placeholder="55 1234 5678" {...field} disabled={isLoading}/>
+                <Input 
+                  placeholder="55 1234 5678" 
+                  {...field} 
+                  disabled={isLoading}
+                  onChange={(e) => {
+                    const numericValue = e.target.value.replace(/\D/g, '');
+                    field.onChange(numericValue);
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
