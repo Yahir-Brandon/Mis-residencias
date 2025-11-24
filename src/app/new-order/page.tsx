@@ -393,10 +393,11 @@ export default function NewOrderPage() {
                             numberOfMonths={2}
                             locale={es}
                             className="p-4"
+                            disabled={{ before: new Date() }}
                             classNames={{
                               day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                              day_range_start: "bg-red-500 text-white hover:bg-red-600",
-                              day_range_end: "bg-green-500 text-white hover:bg-green-600",
+                              day_range_start: "day-range-start",
+                              day_range_end: "day-range-end",
                             }}
                           />
                           <DialogFooter>
