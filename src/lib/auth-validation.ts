@@ -19,9 +19,13 @@ export const personalSignupSchema = z.object({
   phone: z.string().min(10, { message: "El número de teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, "Solo se permiten números."),
   email: z.string().email({ message: "Correo electrónico inválido." }),
   password: passwordValidation,
+  confirmPassword: z.string(),
   acceptTerms: z.boolean().refine((val) => val === true, {
     message: 'Debes aceptar los términos y condiciones y la política de privacidad.',
   }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"],
 });
 
 export const businessSignupSchema = z.object({
@@ -33,7 +37,11 @@ export const businessSignupSchema = z.object({
     .max(13, { message: "El RFC debe tener entre 12 y 13 caracteres." }),
   phone: z.string().min(10, { message: "El número de teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, "Solo se permiten números."),
   password: passwordValidation,
+  confirmPassword: z.string(),
   acceptTerms: z.boolean().refine((val) => val === true, {
     message: 'Debes aceptar los términos y condiciones y la política de privacidad.',
   }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"],
 });

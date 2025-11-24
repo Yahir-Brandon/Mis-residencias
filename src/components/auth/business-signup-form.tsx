@@ -37,6 +37,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { Eye, EyeOff } from 'lucide-react';
 
 export function BusinessSignupForm() {
   const { toast } = useToast();
@@ -44,6 +45,7 @@ export function BusinessSignupForm() {
   const firestore = useFirestore();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof businessSignupSchema>>({
     resolver: zodResolver(businessSignupSchema),
@@ -54,6 +56,7 @@ export function BusinessSignupForm() {
       rfc: '',
       phone: '',
       password: '',
+      confirmPassword: '',
       acceptTerms: false,
     },
   });
@@ -199,9 +202,56 @@ export function BusinessSignupForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
-              </FormControl>
+              <div className="relative">
+                <FormControl>
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    {...field} 
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                </FormControl>
+                 <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirmar Contraseña</FormLabel>
+               <div className="relative">
+                <FormControl>
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    {...field} 
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                </FormControl>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
