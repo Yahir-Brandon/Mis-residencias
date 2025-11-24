@@ -296,7 +296,8 @@ export default function OrderList() {
                     </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                   <DropdownMenu>
+                  <Dialog>
+                    <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
                           <span className="sr-only">Abrir menú</span>
@@ -354,6 +355,7 @@ export default function OrderList() {
 
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  </Dialog>
                 </TableCell>
               </TableRow>
             ))}
@@ -366,104 +368,102 @@ export default function OrderList() {
             )}
           </TableBody>
         </Table>
-        <Dialog open={!!selectedOrder} onOpenChange={(isOpen) => !isOpen && setSelectedOrder(null)}>
-            <DialogContent className="max-w-3xl">
-                {selectedOrder && (
-                    <>
-                        <DialogHeader>
-                            <DialogTitle>Resumen del Pedido: {selectedOrder.projectName}</DialogTitle>
-                            <DialogDescription>
-                                Realizado por {selectedOrder.requesterName} el {format(selectedOrder.createdAt.toDate(), 'dd/MM/yyyy', { locale: es })}.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="max-h-[60vh] overflow-y-auto p-4">
-                            <div className="text-sm space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
-                                        <p>{selectedOrder.requesterName}</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
-                                        <p>{selectedOrder.projectName}</p>
-                                    </div>
+        <DialogContent className="max-w-3xl">
+            {selectedOrder && (
+                <>
+                    <DialogHeader>
+                        <DialogTitle>Resumen del Pedido: {selectedOrder.projectName}</DialogTitle>
+                        <DialogDescription>
+                            Realizado por {selectedOrder.requesterName} el {format(selectedOrder.createdAt.toDate(), 'dd/MM/yyyy', { locale: es })}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto p-4">
+                        <div className="text-sm space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
+                                    <p>{selectedOrder.requesterName}</p>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
-                                    <p>{selectedOrder.street} {selectedOrder.number}, {selectedOrder.municipality}, {selectedOrder.state}, C.P. {selectedOrder.postalCode}</p>
-                                </div>
-                                <div>
-                                    <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
-                                    <p>{selectedOrder.phone}</p>
+                                    <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
+                                    <p>{selectedOrder.projectName}</p>
                                 </div>
                             </div>
-
-                            <Separator className="my-4 bg-gray-300" />
-                            
-                            <h3 className="font-bold uppercase text-center mb-2">Detalles del Pedido</h3>
-                            <Table>
-                                <TableHeader>
-                                <TableRow>
-                                    <TableHead>Descripción</TableHead>
-                                    <TableHead className="text-center">Cantidad</TableHead>
-                                    <TableHead className="text-right">P. Unitario</TableHead>
-                                    <TableHead className="text-right">Importe</TableHead>
-                                </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                {selectedOrder.materials.map((material: any, index: number) => {
-                                    const materialInfo = materialsList.find(m => m.name === material.name);
-                                    const unitPrice = materialInfo?.price || 0;
-                                    const subtotal = material.quantity * unitPrice;
-                                    return (
-                                    <TableRow key={index}>
-                                        <TableCell className="capitalize">{material.name}</TableCell>
-                                        <TableCell className="text-center">{material.quantity} {materialInfo?.unit}(s)</TableCell>
-                                        <TableCell className="text-right">${unitPrice.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">${subtotal.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                    )
-                                })}
-                                </TableBody>
-                                <TableFooter>
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-right font-bold text-lg">Total del Pedido:</TableCell>
-                                    <TableCell className="text-right font-bold text-lg">${selectedOrder.total.toFixed(2)} MXN</TableCell>
-                                </TableRow>
-                                </TableFooter>
-                            </Table>
-                            
-                            <Separator className="my-4 bg-gray-300" />
-                            
-                            <div className="flex flex-col items-center">
-                                <h3 className="font-bold uppercase mb-2">Periodo de Entrega Programado</h3>
-                                <p>
-                                    Del {format(selectedOrder.deliveryDates.from.toDate(), 'PPP', { locale: es })} al {format(selectedOrder.deliveryDates.to.toDate(), 'PPP', { locale: es })}
-                                </p>
+                            <div>
+                                <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
+                                <p>{selectedOrder.street} {selectedOrder.number}, {selectedOrder.municipality}, {selectedOrder.state}, C.P. {selectedOrder.postalCode}</p>
+                            </div>
+                            <div>
+                                <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
+                                <p>{selectedOrder.phone}</p>
                             </div>
                         </div>
-                        <DialogFooter className="pt-4">
-                            <Button onClick={generatePdf} disabled={isGeneratingPdf}>
-                                {isGeneratingPdf ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Generando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <FileDown className="mr-2 h-4 w-4" />
-                                        Descargar PDF
-                                    </>
-                                )}
-                            </Button>
-                            <DialogClose asChild>
-                                <Button variant="outline">Cerrar</Button>
-                            </DialogClose>
-                        </DialogFooter>
-                    </>
-                )}
-            </DialogContent>
-        </Dialog>
+
+                        <Separator className="my-4 bg-gray-300" />
+                        
+                        <h3 className="font-bold uppercase text-center mb-2">Detalles del Pedido</h3>
+                        <Table>
+                            <TableHeader>
+                            <TableRow>
+                                <TableHead>Descripción</TableHead>
+                                <TableHead className="text-center">Cantidad</TableHead>
+                                <TableHead className="text-right">P. Unitario</TableHead>
+                                <TableHead className="text-right">Importe</TableHead>
+                            </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {selectedOrder.materials.map((material: any, index: number) => {
+                                const materialInfo = materialsList.find(m => m.name === material.name);
+                                const unitPrice = materialInfo?.price || 0;
+                                const subtotal = material.quantity * unitPrice;
+                                return (
+                                <TableRow key={index}>
+                                    <TableCell className="capitalize">{material.name}</TableCell>
+                                    <TableCell className="text-center">{material.quantity} {materialInfo?.unit}(s)</TableCell>
+                                    <TableCell className="text-right">${unitPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">${subtotal.toFixed(2)}</TableCell>
+                                </TableRow>
+                                )
+                            })}
+                            </TableBody>
+                            <TableFooter>
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-right font-bold text-lg">Total del Pedido:</TableCell>
+                                <TableCell className="text-right font-bold text-lg">${selectedOrder.total.toFixed(2)} MXN</TableCell>
+                            </TableRow>
+                            </TableFooter>
+                        </Table>
+                        
+                        <Separator className="my-4 bg-gray-300" />
+                        
+                        <div className="flex flex-col items-center">
+                            <h3 className="font-bold uppercase mb-2">Periodo de Entrega Programado</h3>
+                            <p>
+                                Del {format(selectedOrder.deliveryDates.from.toDate(), 'PPP', { locale: es })} al {format(selectedOrder.deliveryDates.to.toDate(), 'PPP', { locale: es })}
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter className="pt-4">
+                        <Button onClick={generatePdf} disabled={isGeneratingPdf}>
+                            {isGeneratingPdf ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Generando...
+                                </>
+                            ) : (
+                                <>
+                                    <FileDown className="mr-2 h-4 w-4" />
+                                    Descargar PDF
+                                </>
+                            )}
+                        </Button>
+                        <DialogClose asChild>
+                            <Button variant="outline">Cerrar</Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </>
+            )}
+        </DialogContent>
       </CardContent>
     </Card>
   );
