@@ -16,7 +16,8 @@ import { CalendarIcon, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
-import { format, es } from "date-fns";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 
@@ -412,5 +413,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-
-    
