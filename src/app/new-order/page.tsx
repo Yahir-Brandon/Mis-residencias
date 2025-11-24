@@ -73,7 +73,7 @@ export default function NewOrderPage() {
       state: '',
       municipality: '',
       material: '',
-      quantity: 0,
+      quantity: undefined,
       deliveryDates: {
         from: undefined,
         to: undefined
@@ -83,7 +83,7 @@ export default function NewOrderPage() {
 
   const quantity = form.watch('quantity');
   const deliveryDates = form.watch('deliveryDates');
-  const total = selectedMaterial ? quantity * selectedMaterial.price : 0;
+  const total = selectedMaterial ? (quantity || 0) * selectedMaterial.price : 0;
 
   useEffect(() => {
     const handleAnalysis = async () => {
@@ -348,24 +348,15 @@ export default function NewOrderPage() {
                         <FormItem>
                           <FormLabel>Cantidad</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="number" 
+                            <Input
+                              type="number"
                               inputMode="numeric"
-                              min="0"
+                              placeholder="0"
                               {...field}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                // Allow empty string to clear the field, or any sequence of digits
                                 if (value === '' || /^\d*$/.test(value)) {
-                                  // When the field is empty, we pass 0 to the form state.
-                                  // The validation schema will catch this if it's submitted.
-                                  field.onChange(value === '' ? '' : parseInt(value, 10));
-                                }
-                              }}
-                              onBlur={(e) => {
-                                // If the field is empty on blur, set it to 0.
-                                if (e.target.value === '') {
-                                  form.setValue('quantity', 0);
+                                  field.onChange(value === '' ? '' : Number(value));
                                 }
                               }}
                             />
@@ -446,11 +437,6 @@ export default function NewOrderPage() {
                             locale={es}
                             className="p-4"
                             disabled={{ before: new Date() }}
-                            classNames={{
-                              day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                              day_range_start: "!bg-red-500 !text-white",
-                              day_range_end: "!bg-green-500 !text-white",
-                            }}
                           />
                           <div className="w-full mt-4 p-4 border-t">
                             <h4 className="text-sm font-semibold mb-2">Simbología</h4>
@@ -509,3 +495,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
