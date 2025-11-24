@@ -395,6 +395,8 @@ export default function NewOrderPage() {
                             className="p-4"
                             classNames={{
                               day_today: "bg-primary/90 text-primary-foreground rounded-md",
+                              day_range_start: "bg-red-500 text-white hover:bg-red-600",
+                              day_range_end: "bg-green-500 text-white hover:bg-green-600",
                             }}
                           />
                           <DialogFooter>
