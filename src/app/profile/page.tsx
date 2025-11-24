@@ -12,9 +12,6 @@ import { Loader2 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import UserList from "@/components/admin/user-list";
 import BusinessList from "@/components/admin/business-list";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Logo } from "@/components/logo";
-import { Separator } from "@/components/ui/separator";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -81,70 +78,44 @@ export default function ProfilePage() {
 
   if (isAdmin) {
     return (
-      <SidebarProvider>
-          <div className="flex h-screen bg-muted/40">
-              <Sidebar className="h-full">
-                  <SidebarHeader>
-                    <div className="flex items-center justify-between w-full">
-                      <Logo />
-                    </div>
-                  </SidebarHeader>
-                  <SidebarContent className="p-2">
-                       <Card className="shadow-none border-none bg-transparent">
-                          <CardHeader className="items-center text-center p-4">
-                              <Avatar className="h-24 w-24 mb-2">
-                                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Admin'} />
-                                  <AvatarFallback>{nameFallback}</AvatarFallback>
-                              </Avatar>
-                              <CardTitle className="text-xl font-bold font-headline">{user.displayName || 'Administrador'}</CardTitle>
-                              <CardDescription>Panel de Administrador</CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-3 text-xs text-muted-foreground px-2">
-                              {user.email && (
-                                  <div className="flex items-center gap-2">
-                                      <Mail className="h-4 w-4 text-primary" />
-                                      <span className="font-medium text-foreground truncate">{user.email}</span>
-                                  </div>
-                              )}
-                              <div className="flex items-center gap-2 p-1.5 bg-primary/10 rounded-md">
-                                  <Shield className="h-4 w-4 text-primary" />
-                                  <span className="font-bold text-primary">Rol de Administrador</span>
-                              </div>
-                          </CardContent>
-                      </Card>
-                      <Separator className="my-4"/>
-                       <SidebarMenu>
-                           <SidebarMenuItem>
-                               <SidebarMenuButton tooltip="Usuarios" isActive={true} className="justify-start"><Users />Usuarios</SidebarMenuButton>
-                           </SidebarMenuItem>
-                           <SidebarMenuItem>
-                               <SidebarMenuButton tooltip="Empresas" className="justify-start"><Briefcase />Empresas</SidebarMenuButton>
-                           </SidebarMenuItem>
-                       </SidebarMenu>
-                  </SidebarContent>
-                  <div className="mt-auto p-2">
-                    <Button onClick={handleLogout} variant="outline" className="w-full justify-start gap-2 p-2 h-auto text-sm">
-                      <LogOut className="h-4 w-4" />
-                      <span>Cerrar Sesión</span>
-                    </Button>
-                  </div>
-              </Sidebar>
-              <div className="flex-1 overflow-y-auto">
-                <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b">
-                   <div className="container mx-auto flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
-                      <SidebarTrigger />
-                      <h1 className="text-xl md:text-2xl font-bold font-headline">Panel de Administración</h1>
-                    </div>
-                </header>
-                <main className="p-4 sm:p-6 lg:p-8">
-                  <div className="grid gap-8 auto-rows-max">
-                      <UserList />
-                      <BusinessList />
-                  </div>
-                </main>
-              </div>
-          </div>
-      </SidebarProvider>
+        <div className="container mx-auto py-12 px-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div className="md:col-span-1">
+                    <Card className="w-full shadow-lg">
+                        <CardHeader className="items-center text-center">
+                            <Avatar className="h-24 w-24 mb-2">
+                                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Admin'} />
+                                <AvatarFallback>{nameFallback}</AvatarFallback>
+                            </Avatar>
+                            <CardTitle className="text-xl font-bold font-headline">{user.displayName || 'Administrador'}</CardTitle>
+                            <CardDescription>Panel de Administrador</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="space-y-3 text-xs text-muted-foreground">
+                                {user.email && (
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="h-4 w-4 text-primary" />
+                                        <span className="font-medium text-foreground truncate">{user.email}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2 p-1.5 bg-primary/10 rounded-md">
+                                    <Shield className="h-4 w-4 text-primary" />
+                                    <span className="font-bold text-primary">Rol de Administrador</span>
+                                </div>
+                            </div>
+                            <Button onClick={handleLogout} variant="outline" className="w-full">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Cerrar Sesión
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="md:col-span-3 space-y-8">
+                    <UserList />
+                    <BusinessList />
+                </div>
+            </div>
+        </div>
     );
   }
 
