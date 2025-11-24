@@ -12,7 +12,7 @@ import { Loader2 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import UserList from "@/components/admin/user-list";
 import BusinessList from "@/components/admin/business-list";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarRail } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Logo } from "@/components/logo";
 import { Separator } from "@/components/ui/separator";
 
@@ -131,9 +131,9 @@ export default function ProfilePage() {
                     </Button>
                   </div>
               </Sidebar>
-              <SidebarRail />
               <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
                   <div className="flex items-center gap-4 mb-6">
+                    <SidebarTrigger />
                     <h1 className="text-2xl md:text-3xl font-bold font-headline">Administrador General</h1>
                   </div>
                   <div className="space-y-8">
