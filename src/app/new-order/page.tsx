@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const orderSchema = z.object({
   requesterName: z.string().min(1, { message: "El nombre es requerido." }),
-  phone: z.string().min(10, { message: "El teléfono debe tener al menos 10 dígitos." }),
+  phone: z.string().min(10, { message: "El teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, { message: "Solo se permiten números." }),
   street: z.string().min(1, { message: "La calle es requerida." }),
   number: z.string().min(1, {message: 'El número exterior es requerido.'}).regex(/^\d+$/, { message: "Solo se permiten números." }),
   postalCode: z.string().min(5, { message: "El código postal debe tener 5 dígitos." }).regex(/^\d+$/, { message: "Solo se permiten números." }),
@@ -90,7 +90,7 @@ export default function NewOrderPage() {
                     <FormItem>
                       <FormLabel>Número de Teléfono</FormLabel>
                       <FormControl>
-                        <Input placeholder="55 1234 5678" {...field} />
+                        <Input type="text" inputMode="numeric" placeholder="55 1234 5678" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
