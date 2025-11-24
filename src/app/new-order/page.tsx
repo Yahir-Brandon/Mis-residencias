@@ -355,8 +355,17 @@ export default function NewOrderPage() {
                               {...field}
                               onChange={(e) => {
                                 const value = e.target.value;
+                                // Allow empty string to clear the field, or any sequence of digits
                                 if (value === '' || /^\d*$/.test(value)) {
-                                   field.onChange(value === '' ? 0 : parseInt(value, 10));
+                                  // When the field is empty, we pass 0 to the form state.
+                                  // The validation schema will catch this if it's submitted.
+                                  field.onChange(value === '' ? '' : parseInt(value, 10));
+                                }
+                              }}
+                              onBlur={(e) => {
+                                // If the field is empty on blur, set it to 0.
+                                if (e.target.value === '') {
+                                  form.setValue('quantity', 0);
                                 }
                               }}
                             />
@@ -439,8 +448,8 @@ export default function NewOrderPage() {
                             disabled={{ before: new Date() }}
                             classNames={{
                               day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                              day_range_start: "bg-red-500 text-white",
-                              day_range_end: "bg-green-500 text-white",
+                              day_range_start: "!bg-red-500 !text-white",
+                              day_range_end: "!bg-green-500 !text-white",
                             }}
                           />
                           <DialogFooter>
@@ -483,5 +492,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-
-    
