@@ -10,14 +10,15 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon, Plus, BrainCircuit } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
+import { analyzeDeliveryDate } from "@/ai/flows/analyze-delivery-date-flow";
 
 
 const orderSchema = z.object({
@@ -54,6 +55,8 @@ export default function NewOrderPage() {
   const [selectedState, setSelectedState] = useState<State | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [deliveryAnalysis, setDeliveryAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
@@ -75,7 +78,33 @@ export default function NewOrderPage() {
   });
 
   const quantity = form.watch('quantity');
+  const deliveryDates = form.watch('deliveryDates');
   const total = selectedMaterial ? quantity * selectedMaterial.price : 0;
+
+  useEffect(() => {
+    const handleAnalysis = async () => {
+      if (deliveryDates.from && deliveryDates.to) {
+        setIsAnalyzing(true);
+        setDeliveryAnalysis(null);
+        try {
+          const result = await analyzeDeliveryDate({
+            startDate: deliveryDates.from.toISOString(),
+            endDate: deliveryDates.to.toISOString(),
+          });
+          setDeliveryAnalysis(result.priority);
+        } catch (error) {
+          console.error("Error analyzing date:", error);
+          setDeliveryAnalysis("No se pudo analizar la fecha.");
+        } finally {
+          setIsAnalyzing(false);
+        }
+      } else {
+        setDeliveryAnalysis(null);
+      }
+    };
+
+    handleAnalysis();
+  }, [deliveryDates.from, deliveryDates.to]);
 
 
   const handleStateChange = (stateName: string) => {
@@ -309,14 +338,14 @@ export default function NewOrderPage() {
                           <FormControl>
                             <Input 
                               type="number" 
-                              inputMode="numeric" 
+                              inputMode="numeric"
                               min="0"
                               {...field}
                               onChange={(e) => {
                                 const value = e.target.value;
                                 // Allow empty string or numbers
                                 if (value === '' || /^\d+$/.test(value)) {
-                                   field.onChange(value === '' ? '' : parseInt(value, 10));
+                                   field.onChange(value === '' ? 0 : parseInt(value, 10));
                                 }
                               }}
                             />
@@ -399,8 +428,8 @@ export default function NewOrderPage() {
                             disabled={{ before: new Date() }}
                             classNames={{
                               day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                              day_range_start: "bg-red-500 text-white",
-                              day_range_end: "bg-green-500 text-white",
+                              day_range_start: "bg-red-500 text-white hover:bg-red-600",
+                              day_range_end: "bg-green-500 text-white hover:bg-green-600",
                             }}
                           />
                           <DialogFooter>
@@ -414,6 +443,18 @@ export default function NewOrderPage() {
                     <FormDescription>
                         Define el periodo en el que puedes recibir el material.
                     </FormDescription>
+                    {isAnalyzing && (
+                      <div className="flex items-center text-sm text-muted-foreground mt-2">
+                        <BrainCircuit className="mr-2 h-4 w-4 animate-pulse" />
+                        Analizando prioridad...
+                      </div>
+                    )}
+                    {deliveryAnalysis && !isAnalyzing && (
+                       <div className="flex items-center text-sm font-medium mt-2">
+                        <BrainCircuit className="mr-2 h-4 w-4 text-primary" />
+                        Prioridad del pedido: <span className="ml-1 font-bold">{deliveryAnalysis}</span>
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -431,5 +472,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-
-    
