@@ -13,6 +13,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
+export const forgotPasswordSchema = z.object({
+    email: z.string().email({ message: "Por favor, introduce un correo electrónico válido." }),
+});
+
 export const personalSignupSchema = z.object({
   firstName: z.string().min(1, { message: "El nombre es requerido." }),
   lastName: z.string().min(1, { message: "El apellido es requerido." }),

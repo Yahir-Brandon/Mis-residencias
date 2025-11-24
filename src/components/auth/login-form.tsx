@@ -20,12 +20,15 @@ import { loginSchema } from '@/lib/auth-validation';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 
 export function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
   const auth = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -77,10 +80,32 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contraseña</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
-              </FormControl>
+              <div className="flex justify-between items-center">
+                <FormLabel>Contraseña</FormLabel>
+                <Link href="/forgot-password" passHref>
+                    <Button variant="link" className="p-0 h-auto text-sm">¿Olvidaste tu contraseña?</Button>
+                </Link>
+              </div>
+              <div className="relative">
+                <FormControl>
+                  <Input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    {...field} 
+                    disabled={isLoading}
+                    className="pr-10"
+                  />
+                </FormControl>
+                 <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-3"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
