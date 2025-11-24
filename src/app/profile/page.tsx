@@ -16,19 +16,19 @@ export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    // First, handle the case where loading is finished but there's no user.
+    // Redirect to login if loading is done and there's no user.
     if (!isUserLoading && !user) {
       router.push('/login');
       return;
     }
 
-    // If the user object exists, verify its validity with the server.
+    // If there is a user object, verify its validity with the server.
     if (user) {
       user.reload().catch((error) => {
-        // This catch block will execute if the user's token is invalid,
-        // for example, if the user has been deleted from the Firebase console.
-        console.error("Error reloading user, signing out:", error);
-        // Force sign out and redirect to login page.
+        // This will fail if the user's token is no longer valid (e.g., deleted).
+        console.error("User token is invalid, forcing sign out:", error);
+        
+        // Forcibly sign out the user on the client and then redirect.
         signOut(auth).finally(() => {
           router.push('/login');
         });
@@ -42,6 +42,8 @@ export default function ProfilePage() {
     router.push('/');
   };
 
+  // While loading or if the user is not yet available, show a loader.
+  // This also prevents a flash of the profile page for an invalid user.
   if (isUserLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
