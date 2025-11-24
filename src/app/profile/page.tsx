@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity, Shield } from "lucide-react";
+import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity, Shield, Users, Briefcase } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth, useUser, useFirestore } from "@/firebase";
@@ -12,6 +12,9 @@ import { Loader2 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import UserList from "@/components/admin/user-list";
 import BusinessList from "@/components/admin/business-list";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Logo } from "@/components/logo";
+import { Separator } from "@/components/ui/separator";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -43,8 +46,6 @@ export default function ProfilePage() {
             setIsAdmin(true);
           }
         } else {
-          // User doc doesn't exist, might be a partially created account
-          // Or user was deleted from firestore but not auth
           signOut(auth).finally(() => router.push('/login'));
         }
       } catch (error) {
@@ -73,11 +74,73 @@ export default function ProfilePage() {
   }
 
   if (!user) {
-    // This case is handled by the useEffect redirect, but as a fallback
     return null;
   }
   
   const nameFallback = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+
+  if (isAdmin) {
+    return (
+      <SidebarProvider>
+          <div className="flex h-[calc(100vh-4rem)]">
+              <Sidebar className="h-full">
+                  <SidebarHeader>
+                      <Logo />
+                  </SidebarHeader>
+                  <SidebarContent className="p-2">
+                       <Card className="shadow-none border-none">
+                          <CardHeader className="items-center text-center p-4">
+                              <Avatar className="h-24 w-24 mb-2">
+                                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Admin'} />
+                                  <AvatarFallback>{nameFallback}</AvatarFallback>
+                              </Avatar>
+                              <CardTitle className="text-xl font-bold font-headline">{user.displayName || 'Administrador'}</CardTitle>
+                              <CardDescription>Panel de Administrador</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-3 text-xs text-muted-foreground px-2">
+                              {user.email && (
+                                  <div className="flex items-center gap-2">
+                                      <Mail className="h-4 w-4 text-primary" />
+                                      <span className="font-medium text-foreground truncate">{user.email}</span>
+                                  </div>
+                              )}
+                              <div className="flex items-center gap-2 p-1.5 bg-primary/10 rounded-md">
+                                  <Shield className="h-4 w-4 text-primary" />
+                                  <span className="font-bold text-primary">Rol de Administrador</span>
+                              </div>
+                          </CardContent>
+                      </Card>
+                      <Separator className="my-4"/>
+                       <SidebarMenu>
+                           <SidebarMenuItem>
+                               <SidebarMenuButton tooltip="Usuarios" isActive={true} className="justify-start"><Users />Usuarios</SidebarMenuButton>
+                           </SidebarMenuItem>
+                           <SidebarMenuItem>
+                               <SidebarMenuButton tooltip="Empresas" className="justify-start"><Briefcase />Empresas</SidebarMenuButton>
+                           </SidebarMenuItem>
+                       </SidebarMenu>
+                  </SidebarContent>
+                  <div className="mt-auto p-2">
+                    <Button onClick={handleLogout} variant="outline" className="w-full justify-start gap-2 p-2 h-auto text-sm">
+                      <LogOut className="h-4 w-4" />
+                      <span>Cerrar Sesión</span>
+                    </Button>
+                  </div>
+              </Sidebar>
+              <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <SidebarTrigger className="md:hidden"/>
+                    <h1 className="text-2xl md:text-3xl font-bold font-headline">Administrador General</h1>
+                  </div>
+                  <div className="space-y-8">
+                      <UserList />
+                      <BusinessList />
+                  </div>
+              </div>
+          </div>
+      </SidebarProvider>
+    );
+  }
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
@@ -91,7 +154,7 @@ export default function ProfilePage() {
                 <AvatarFallback>{nameFallback}</AvatarFallback>
               </Avatar>
               <CardTitle className="text-3xl font-bold font-headline">{user.displayName || 'Usuario'}</CardTitle>
-              <CardDescription>{isAdmin ? "Panel de Administrador" : "Panel de Perfil"}</CardDescription>
+              <CardDescription>Panel de Perfil</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4 text-sm text-muted-foreground">
@@ -113,12 +176,6 @@ export default function ProfilePage() {
                     <span className="font-medium text-foreground">{user.phoneNumber}</span>
                   </div>
                 )}
-                 {isAdmin && (
-                  <div className="flex items-center gap-3 p-2 bg-primary/10 rounded-md">
-                    <Shield className="h-5 w-5 text-primary" />
-                    <span className="font-bold text-primary">Rol de Administrador</span>
-                  </div>
-                )}
               </div>
               <Button onClick={handleLogout} variant="outline" className="w-full">
                 <LogOut className="mr-2 h-4 w-4" />
@@ -131,48 +188,41 @@ export default function ProfilePage() {
         {/* Dashboard Section */}
         <div className="md:col-span-2">
             <h2 className="text-3xl font-bold font-headline mb-6">Panel de Control</h2>
-            {isAdmin ? (
-                <div className="space-y-8">
-                    <UserList />
-                    <BusinessList />
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Nuevo Pedido</CardTitle>
-                            <PackagePlus className="h-5 w-5 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <Button asChild className="mt-4">
-                                <Link href="/new-order">
-                                    Crear un nuevo pedido
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Pedidos Recientes</CardTitle>
-                            <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">0</div>
-                            <p className="text-xs text-muted-foreground">en el último mes</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Estatus de Cuenta</CardTitle>
-                            <Activity className="h-5 w-5 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-green-600">Activa</div>
-                            <p className="text-xs text-muted-foreground">desde Hoy</p>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Nuevo Pedido</CardTitle>
+                        <PackagePlus className="h-5 w-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild className="mt-4">
+                            <Link href="/new-order">
+                                Crear un nuevo pedido
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Pedidos Recientes</CardTitle>
+                        <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">0</div>
+                        <p className="text-xs text-muted-foreground">en el último mes</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-sm font-medium">Estatus de Cuenta</CardTitle>
+                        <Activity className="h-5 w-5 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-green-600">Activa</div>
+                        <p className="text-xs text-muted-foreground">desde Hoy</p>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       </div>
     </div>

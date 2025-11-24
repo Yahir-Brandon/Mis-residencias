@@ -3,10 +3,14 @@
 import { useUser } from '@/firebase';
 import { HardHat } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function Logo() {
   const { user } = useUser();
-  const href = user ? '/profile' : '/';
+  const pathname = usePathname();
+  
+  // Prevent re-rendering the profile page if already there
+  const href = user && pathname === '/profile' ? '#' : (user ? '/profile' : '/');
 
   return (
     <Link href={href} className="flex items-center gap-2">
