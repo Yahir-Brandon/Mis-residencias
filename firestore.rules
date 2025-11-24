@@ -1,30 +1,27 @@
 /**
- * Core Philosophy: This ruleset enforces a strict user-ownership model.
- * Each user, whether an individual or a business, can only access and modify
- * their own profile data. The document ID in the user-related collections
- * MUST match the authenticated user's UID.
+ * Core Philosophy: This ruleset enforces a strict user-ownership model, with a
+ * special exception for an 'admin' role. It is designed for security and scalability,
+ * ensuring users can only manage their own data, while administrators can read
+ * all user and business data for oversight.
  *
  * Data Structure:
- * - /users/{userId}: Stores common profile data for all users (normal and business).
+ * - /users/{userId}: Core, common user data (e.g., email, userType). The document ID is the auth UID.
  * - /businesses/{userId}: Stores business-specific data for business users.
  * - /products/{productId}: Stores product listings, which are public.
  *
  * Key Security Decisions:
  * - Path-based Ownership: All user-specific data is stored in documents where
- *   the ID matches the user's Authentication UID. This is the primary mechanism
- *   for ensuring data privacy.
- * - User Listing Disabled: To protect user privacy, listing the contents of
- *   the '/users' or '/businesses' collections is explicitly disallowed.
+ *   the ID matches the user's Authentication UID.
+ * - Admin Read Access: Users with `userType == 'admin'` can read all documents
+ *   in the `/users` and `/businesses` collections, but cannot write to them. This
+ *   provides system oversight without allowing impersonation or data tampering.
+ * - User Listing Restricted: Regular users cannot list the contents of the
+ *   '/users' or '/businesses' collections to protect privacy.
  * - Self-Creation Only: Users can only create a profile document for
  *   themselves, where the document ID matches their own UID.
- * - Public Product Visibility: The '/products' collection is publicly readable
- *   to allow browsing by all users, including those not signed in.
+ * - Public Product Visibility: The '/products' collection is publicly readable.
  * - Write Access to Products Restricted: All write operations on products
  *   are disabled as a secure default.
- *
- * Denormalization for Authorization: The rules rely on path-based authorization.
- * The internal 'id' field of a document must match the document ID upon creation
- * to ensure data integrity and reliable authorization checks.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -48,19 +45,28 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    
+    /**
+     * Checks if the requesting user has an 'admin' role in their own user document.
+     * This is a cross-document read, which is efficient for rules.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'admin';
+    }
+
 
     // ----------------------------------------------------------------------
     // Collection: users
     // ----------------------------------------------------------------------
 
     /**
-     * @description Controls access to individual user profiles (both normal and business).
+     * @description Controls access to individual user profiles.
      * The document ID must be the user's UID.
      * @path /users/{userId}
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Prevent listing all users
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin(); // Only admins can list users.
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isOwner(userId);
@@ -76,14 +82,12 @@ service cloud.firestore {
      * @path /businesses/{businessId}
      */
     match /businesses/{businessId} {
-      // A user can only access a business profile if they are the owner.
-      // We also check that a corresponding user document exists to ensure integrity.
       function isBusinessOwner() {
         return isOwner(businessId) && exists(/databases/$(database)/documents/users/$(businessId));
       }
 
-      allow get: if isBusinessOwner();
-      allow list: if false; // Prevent listing all businesses
+      allow get: if isBusinessOwner() || isAdmin();
+      allow list: if isAdmin(); // Only admins can list businesses.
       allow create: if isBusinessOwner() && request.resource.data.id == businessId;
       allow update: if isBusinessOwner() && request.resource.data.id == resource.data.id;
       allow delete: if isBusinessOwner();
@@ -99,8 +103,6 @@ service cloud.firestore {
      */
     match /products/{productId} {
       allow get, list: if true; // Publicly readable
-      // Write operations are disabled as a secure default.
-      // TODO: Implement ownership-based writes if products are user-specific.
       allow create, update, delete: if false;
     }
   }

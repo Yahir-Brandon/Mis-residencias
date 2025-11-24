@@ -3,48 +3,68 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity } from "lucide-react";
+import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useAuth, useUser } from "@/firebase";
+import { useEffect, useState } from "react";
+import { useAuth, useUser, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { Loader2 } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
+import UserList from "@/components/admin/user-list";
+import BusinessList from "@/components/admin/business-list";
 
 export default function ProfilePage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
+  const [userData, setUserData] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   useEffect(() => {
-    // Redirect to login if loading is done and there's no user.
-    if (!isUserLoading && !user) {
+    if (isUserLoading) return;
+
+    if (!user) {
       router.push('/login');
       return;
     }
 
-    // If there is a user object, verify its validity with the server.
-    if (user) {
-      user.reload().catch((error) => {
-        // This will fail if the user's token is no longer valid (e.g., deleted).
-        console.error("User token is invalid, forcing sign out:", error);
-        
-        // Forcibly sign out the user on the client and then redirect.
-        signOut(auth).finally(() => {
-          router.push('/login');
-        });
-      });
-    }
-  }, [user, isUserLoading, router, auth]);
+    const checkUser = async () => {
+      try {
+        await user.reload();
+        const userDocRef = doc(firestore, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
 
+        if (userDocSnap.exists()) {
+          const fetchedUserData = userDocSnap.data();
+          setUserData(fetchedUserData);
+          if (fetchedUserData.userType === 'admin') {
+            setIsAdmin(true);
+          }
+        } else {
+          // User doc doesn't exist, might be a partially created account
+          // Or user was deleted from firestore but not auth
+          signOut(auth).finally(() => router.push('/login'));
+        }
+      } catch (error) {
+        console.error("User token is invalid or user deleted, forcing sign out:", error);
+        signOut(auth).finally(() => router.push('/login'));
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    checkUser();
+  }, [user, isUserLoading, router, auth, firestore]);
 
   const handleLogout = () => {
-    signOut(auth);
-    router.push('/');
+    signOut(auth).finally(() => {
+      router.push('/');
+    });
   };
 
-  // While loading or if the user is not yet available, show a loader.
-  // This also prevents a flash of the profile page for an invalid user.
-  if (isUserLoading || !user) {
+  if (isLoadingProfile || isUserLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -52,6 +72,11 @@ export default function ProfilePage() {
     );
   }
 
+  if (!user) {
+    // This case is handled by the useEffect redirect, but as a fallback
+    return null;
+  }
+  
   const nameFallback = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
 
   return (
@@ -66,7 +91,7 @@ export default function ProfilePage() {
                 <AvatarFallback>{nameFallback}</AvatarFallback>
               </Avatar>
               <CardTitle className="text-3xl font-bold font-headline">{user.displayName || 'Usuario'}</CardTitle>
-              <CardDescription>Panel de Perfil</CardDescription>
+              <CardDescription>{isAdmin ? "Panel de Administrador" : "Panel de Perfil"}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4 text-sm text-muted-foreground">
@@ -88,6 +113,12 @@ export default function ProfilePage() {
                     <span className="font-medium text-foreground">{user.phoneNumber}</span>
                   </div>
                 )}
+                 {isAdmin && (
+                  <div className="flex items-center gap-3 p-2 bg-primary/10 rounded-md">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <span className="font-bold text-primary">Rol de Administrador</span>
+                  </div>
+                )}
               </div>
               <Button onClick={handleLogout} variant="outline" className="w-full">
                 <LogOut className="mr-2 h-4 w-4" />
@@ -100,42 +131,48 @@ export default function ProfilePage() {
         {/* Dashboard Section */}
         <div className="md:col-span-2">
             <h2 className="text-3xl font-bold font-headline mb-6">Panel de Control</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Nuevo Pedido</CardTitle>
-                        <PackagePlus className="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild className="mt-4">
-                            <Link href="/new-order">
-                                Crear un nuevo pedido
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Pedidos Recientes</CardTitle>
-                        <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">0</div>
-                        <p className="text-xs text-muted-foreground">en el último mes</p>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Estatus de Cuenta</CardTitle>
-                        <Activity className="h-5 w-5 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">Activa</div>
-                        <p className="text-xs text-muted-foreground">desde Hoy</p>
-                    </CardContent>
-                </Card>
-            </div>
-            {/* Future content like recent orders table can go here */}
+            {isAdmin ? (
+                <div className="space-y-8">
+                    <UserList />
+                    <BusinessList />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">Nuevo Pedido</CardTitle>
+                            <PackagePlus className="h-5 w-5 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <Button asChild className="mt-4">
+                                <Link href="/new-order">
+                                    Crear un nuevo pedido
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">Pedidos Recientes</CardTitle>
+                            <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">0</div>
+                            <p className="text-xs text-muted-foreground">en el último mes</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">Estatus de Cuenta</CardTitle>
+                            <Activity className="h-5 w-5 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-green-600">Activa</div>
+                            <p className="text-xs text-muted-foreground">desde Hoy</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
       </div>
     </div>

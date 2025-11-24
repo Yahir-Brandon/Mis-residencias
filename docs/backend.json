@@ -29,8 +29,8 @@
         },
         "userType": {
           "type": "string",
-          "description": "Type of user (normal or business).",
-          "enum": ["normal", "business"]
+          "description": "Type of user (normal, business, or admin).",
+          "enum": ["normal", "business", "admin"]
         }
       },
       "required": [
