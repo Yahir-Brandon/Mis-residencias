@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from 'react';
 import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { Loader2, FileDown, Home } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
@@ -151,10 +152,10 @@ function OrderSummaryContent() {
         
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text(monthName.charAt(0).toUpperCase() + monthName.slice(1), xOffset + (3.5 * 12), yOffset, { align: 'center' });
+        doc.text(monthName.charAt(0).toUpperCase() + monthName.slice(1), xOffset + (3.5 * 7), yOffset, { align: 'center' });
 
-        const cellWidth = 12;
-        const cellHeight = 8;
+        const cellWidth = 7;
+        const cellHeight = 7;
         const startX = xOffset;
         const calendarY = yOffset + 5;
         const dayHeaders = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
@@ -214,11 +215,11 @@ function OrderSummaryContent() {
       drawMonth(deliveryStart, 14, calendarYPos);
 
       if(startMonth !== endMonth) {
-        drawMonth(deliveryEnd, 110, calendarYPos);
+        drawMonth(deliveryEnd, 80, calendarYPos);
       }
 
       // Legend
-      const legendY = calendarYPos + 6 * 8 + 15;
+      const legendY = calendarYPos + 6 * 7 + 10;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       
