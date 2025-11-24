@@ -66,7 +66,7 @@ export default function NewOrderPage() {
       state: '',
       municipality: '',
       material: '',
-      quantity: 1,
+      quantity: 0,
       deliveryDates: {
         from: undefined,
         to: undefined
@@ -310,11 +310,14 @@ export default function NewOrderPage() {
                             <Input 
                               type="number" 
                               inputMode="numeric" 
-                              min="1" 
+                              min="0"
                               {...field}
                               onChange={(e) => {
-                                const numericValue = e.target.value.replace(/\D/g, '');
-                                field.onChange(parseInt(numericValue, 10) || 1);
+                                const value = e.target.value;
+                                // Allow empty string or numbers
+                                if (value === '' || /^\d+$/.test(value)) {
+                                   field.onChange(value === '' ? '' : parseInt(value, 10));
+                                }
                               }}
                             />
                           </FormControl>
@@ -396,8 +399,8 @@ export default function NewOrderPage() {
                             disabled={{ before: new Date() }}
                             classNames={{
                               day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                              day_range_start: "day-range-start",
-                              day_range_end: "day-range-end",
+                              day_range_start: "bg-red-500 text-white",
+                              day_range_end: "bg-green-500 text-white",
                             }}
                           />
                           <DialogFooter>
@@ -428,3 +431,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
