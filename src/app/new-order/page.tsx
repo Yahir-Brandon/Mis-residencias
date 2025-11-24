@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +16,7 @@ import { CalendarIcon, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
-import { format } from "date-fns";
+import { format, es } from "date-fns";
 import { cn } from "@/lib/utils";
 
 
@@ -53,6 +53,7 @@ export default function NewOrderPage() {
   const { toast } = useToast();
   const [selectedState, setSelectedState] = useState<State | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
@@ -347,7 +348,7 @@ export default function NewOrderPage() {
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Fechas de Entrega</FormLabel>
-                    <Popover>
+                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -361,11 +362,11 @@ export default function NewOrderPage() {
                             {field.value.from ? (
                               field.value.to ? (
                                 <>
-                                  {format(field.value.from, "LLL dd, y")} -{" "}
-                                  {format(field.value.to, "LLL dd, y")}
+                                  {format(field.value.from, "PPP", { locale: es })} -{" "}
+                                  {format(field.value.to, "PPP", { locale: es })}
                                 </>
                               ) : (
-                                format(field.value.from, "LLL dd, y")
+                                format(field.value.from, "PPP", { locale: es })
                               )
                             ) : (
                               <span>Elige un rango de fechas</span>
@@ -374,6 +375,9 @@ export default function NewOrderPage() {
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
+                        <div className="p-4 text-sm text-muted-foreground">
+                          Selecciona una fecha de inicio y una fecha final para la entrega.
+                        </div>
                         <Calendar
                           initialFocus
                           mode="range"
@@ -381,9 +385,16 @@ export default function NewOrderPage() {
                           selected={{from: field.value.from!, to: field.value.to}}
                           onSelect={(dateRange) => field.onChange(dateRange)}
                           numberOfMonths={2}
+                          locale={es}
                         />
+                        <div className="p-4 border-t flex justify-end">
+                            <Button onClick={() => setIsCalendarOpen(false)}>Confirmar</Button>
+                        </div>
                       </PopoverContent>
                     </Popover>
+                    <FormDescription>
+                        Define el periodo en el que puedes recibir el material.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -401,3 +412,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
