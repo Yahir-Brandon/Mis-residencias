@@ -73,7 +73,7 @@ export default function NewOrderPage() {
       state: '',
       municipality: '',
       material: '',
-      quantity: undefined,
+      quantity: '' as any, // Initialize as empty string to be a controlled component
       deliveryDates: {
         from: undefined,
         to: undefined
@@ -83,7 +83,8 @@ export default function NewOrderPage() {
 
   const quantity = form.watch('quantity');
   const deliveryDates = form.watch('deliveryDates');
-  const total = selectedMaterial ? (quantity || 0) * selectedMaterial.price : 0;
+  const total = selectedMaterial ? (Number(quantity) || 0) * selectedMaterial.price : 0;
+
 
   useEffect(() => {
     const handleAnalysis = async () => {
@@ -355,10 +356,12 @@ export default function NewOrderPage() {
                               {...field}
                               onChange={(e) => {
                                 const value = e.target.value;
+                                // Allow empty string or numbers
                                 if (value === '' || /^\d*$/.test(value)) {
                                   field.onChange(value === '' ? '' : Number(value));
                                 }
                               }}
+                              value={field.value === 0 ? '' : field.value}
                             />
                           </FormControl>
                           <FormMessage />
@@ -495,5 +498,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-
-    
