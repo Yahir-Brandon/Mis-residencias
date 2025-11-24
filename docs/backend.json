@@ -8,7 +8,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user, matches Firebase Auth UID."
         },
         "firstName": {
           "type": "string",
@@ -30,7 +30,7 @@
         "userType": {
           "type": "string",
           "description": "Type of user (normal or business).",
-          "format": "string"
+          "enum": ["normal", "business"]
         }
       },
       "required": [
@@ -47,7 +47,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the business."
+          "description": "Unique identifier for the business, matches Firebase Auth UID."
         },
         "companyName": {
           "type": "string",
@@ -119,8 +119,7 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -132,11 +131,11 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores individual user profiles. Uses path-based ownership, ensuring only the user can access their own profile data. Includes denormalized 'userId' for authorization independence.",
+          "description": "Stores individual user profiles. The document ID is the user's Firebase Auth UID. This collection stores common user data.",
           "params": [
             {
               "name": "userId",
-              "description": "Unique identifier for the user."
+              "description": "Unique identifier for the user, matching their Firebase Auth UID."
             }
           ]
         }
@@ -148,11 +147,11 @@
           "schema": {
             "$ref": "#/backend/entities/Business"
           },
-          "description": "Stores business user profiles. Uses path-based ownership, ensuring only the business can access their own profile data. Includes denormalized 'businessId' for authorization independence.",
+          "description": "Stores business user profiles. The document ID is the business user's Firebase Auth UID.",
           "params": [
             {
               "name": "businessId",
-              "description": "Unique identifier for the business."
+              "description": "Unique identifier for the business user, matching their Firebase Auth UID."
             }
           ]
         }
@@ -164,7 +163,7 @@
           "schema": {
             "$ref": "#/backend/entities/Product"
           },
-          "description": "Stores product information. No specific authorization concerns for initial setup.",
+          "description": "Stores product information. Publicly readable.",
           "params": [
             {
               "name": "productId",
@@ -174,6 +173,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage users (both normal and business) and products for the ConstructConnect application. It prioritizes authorization independence by using path-based ownership for user data. User profiles are stored directly under the `/users/{userId}` collection, which provides a secure and scalable way to manage user-specific data. Business profiles are stored similarly under `/businesses/{businessId}`. Products are stored in a separate `/products` collection. This segregation simplifies security rules and enhances query performance.  This structure is designed to facilitate basic user registration and login, and provides a solid foundation for future enhancements."
+    "reasoning": "The Firestore structure is designed for a secure, user-centric application. The primary `/users/{userId}` collection uses the Firebase Auth UID as the document ID, creating a direct and secure link between the authenticated user and their data. This path-based ownership is the cornerstone of the security rules. For business accounts, a separate `/businesses/{businessId}` collection is used, also keyed by the user's UID, to cleanly segregate business-specific data from personal user data, simplifying rules and queries. Products are in a separate, publicly readable collection to allow browsing for all users. This design ensures that users can only access their own information, prevents data leakage between user types, and provides a scalable foundation."
   }
 }

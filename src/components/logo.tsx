@@ -1,22 +1,12 @@
 'use client';
 
+import { useUser } from '@/firebase';
 import { HardHat } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 
 export function Logo() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // This check needs to be in a useEffect to run on the client-side
-    // where localStorage is available.
-    const authStatus = localStorage.getItem('isAuthenticated');
-    setIsAuthenticated(authStatus === 'true');
-  }, [pathname]); // Re-check on path change to ensure it's up-to-date
-
-  const href = isAuthenticated ? '/profile' : '/';
+  const { user } = useUser();
+  const href = user ? '/profile' : '/';
 
   return (
     <Link href={href} className="flex items-center gap-2">

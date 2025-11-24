@@ -30,9 +30,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TermsContent } from '@/components/legal/terms-content';
 import { PrivacyContent } from '@/components/legal/privacy-content';
+import { useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export function PersonalSignupForm() {
   const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof personalSignupSchema>>({
     resolver: zodResolver(personalSignupSchema),
     defaultValues: {
@@ -45,13 +57,52 @@ export function PersonalSignupForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof personalSignupSchema>) {
-    console.log(values);
-    toast({
-      title: '¡Cuenta Creada!',
-      description: 'Tu cuenta personal ha sido creada exitosamente.',
-    });
-    form.reset();
+  async function onSubmit(values: z.infer<typeof personalSignupSchema>) {
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      const displayName = `${values.firstName} ${values.lastName}`;
+      await updateProfile(user, { displayName });
+
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userData = {
+        id: user.uid,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phoneNumber: values.phone,
+        email: values.email,
+        userType: 'normal',
+      };
+      
+      await setDoc(userDocRef, userData)
+        .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'create',
+                requestResourceData: userData
+            }));
+            throw error;
+        });
+
+      toast({
+        title: '¡Cuenta Creada!',
+        description: 'Tu cuenta personal ha sido creada exitosamente. Redirigiendo...',
+      });
+
+      router.push('/profile');
+
+    } catch (error: any) {
+      console.error('Error signing up:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al crear la cuenta',
+        description: error.message || 'Ocurrió un error inesperado.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -65,7 +116,7 @@ export function PersonalSignupForm() {
               <FormItem>
                 <FormLabel>Nombre</FormLabel>
                 <FormControl>
-                  <Input placeholder="Juan" {...field} />
+                  <Input placeholder="Juan" {...field} disabled={isLoading}/>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -78,7 +129,7 @@ export function PersonalSignupForm() {
               <FormItem>
                 <FormLabel>Apellido</FormLabel>
                 <FormControl>
-                  <Input placeholder="Pérez" {...field} />
+                  <Input placeholder="Pérez" {...field} disabled={isLoading}/>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -92,7 +143,7 @@ export function PersonalSignupForm() {
             <FormItem>
               <FormLabel>Número de Teléfono</FormLabel>
               <FormControl>
-                <Input placeholder="55 1234 5678" {...field} />
+                <Input placeholder="55 1234 5678" {...field} disabled={isLoading}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -105,7 +156,7 @@ export function PersonalSignupForm() {
             <FormItem>
               <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input placeholder="nombre@ejemplo.com" {...field} />
+                <Input placeholder="nombre@ejemplo.com" {...field} disabled={isLoading}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -118,7 +169,7 @@ export function PersonalSignupForm() {
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -134,6 +185,7 @@ export function PersonalSignupForm() {
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
+                  disabled={isLoading}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
@@ -193,8 +245,8 @@ export function PersonalSignupForm() {
           )}
         />
         
-        <Button type="submit" className="w-full font-bold">
-          Crear Cuenta
+        <Button type="submit" className="w-full font-bold" disabled={isLoading}>
+          {isLoading ? 'Creando cuenta...' : 'Crear Cuenta'}
         </Button>
       </form>
     </Form>

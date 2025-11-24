@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,12 +17,16 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { loginSchema } from '@/lib/auth-validation';
-import { testUser } from '@/lib/placeholder-data';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export function LoginForm() {
   const { toast } = useToast();
   const router = useRouter();
+  const auth = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -30,24 +35,24 @@ export function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof loginSchema>) {
-    // For local testing, check against the test user
-    if (values.email === testUser.email && values.password === testUser.password) {
-      localStorage.setItem('isAuthenticated', 'true');
+  async function onSubmit(values: z.infer<typeof loginSchema>) {
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: 'Inicio de Sesión Exitoso',
         description: '¡Bienvenido de vuelta!',
       });
-      console.log('Login successful:', values);
       router.push('/profile');
-    } else {
-      localStorage.removeItem('isAuthenticated');
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Inicio de Sesión Fallido',
         description: 'Correo electrónico o contraseña no válidos.',
       });
-      console.log('Login failed: Invalid credentials');
+      console.error('Login failed:', error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -61,7 +66,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input placeholder="nombre@ejemplo.com" {...field} />
+                <Input placeholder="nombre@ejemplo.com" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -74,14 +79,14 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full font-bold">
-          Iniciar Sesión
+        <Button type="submit" className="w-full font-bold" disabled={isLoading}>
+          {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </Button>
       </form>
     </Form>

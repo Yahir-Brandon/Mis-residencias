@@ -2,27 +2,39 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { testUser } from "@/lib/placeholder-data";
 import Link from "next/link";
 import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useAuth, useUser } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { Loader2 } from "lucide-react";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    const authStatus = localStorage.getItem('isAuthenticated');
-    if (authStatus !== 'true') {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [router]);
+  }, [user, isUserLoading, router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+    signOut(auth);
     router.push('/');
   };
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const nameFallback = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
@@ -32,26 +44,32 @@ export default function ProfilePage() {
           <Card className="w-full shadow-lg">
             <CardHeader className="items-center text-center">
               <Avatar className="h-24 w-24 mb-4">
-                <AvatarImage src={testUser.avatar} alt={testUser.name} />
-                <AvatarFallback>{testUser.name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
+                <AvatarFallback>{nameFallback}</AvatarFallback>
               </Avatar>
-              <CardTitle className="text-3xl font-bold font-headline">{testUser.name}</CardTitle>
+              <CardTitle className="text-3xl font-bold font-headline">{user.displayName || 'Usuario'}</CardTitle>
               <CardDescription>Panel de Perfil</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-primary" />
-                  <span className="font-medium text-foreground">{testUser.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <span className="font-medium text-foreground">{testUser.email}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <span className="font-medium text-foreground">+52 55 1234 5678 (ficticio)</span>
-                </div>
+                {user.displayName && (
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-primary" />
+                    <span className="font-medium text-foreground">{user.displayName}</span>
+                  </div>
+                )}
+                {user.email && (
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-primary" />
+                    <span className="font-medium text-foreground">{user.email}</span>
+                  </div>
+                )}
+                {user.phoneNumber && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-primary" />
+                    <span className="font-medium text-foreground">{user.phoneNumber}</span>
+                  </div>
+                )}
               </div>
               <Button onClick={handleLogout} variant="outline" className="w-full">
                 <LogOut className="mr-2 h-4 w-4" />

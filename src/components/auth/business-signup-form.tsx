@@ -30,10 +30,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TermsContent } from '@/components/legal/terms-content';
 import { PrivacyContent } from '@/components/legal/privacy-content';
-
+import { useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export function BusinessSignupForm() {
   const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof businessSignupSchema>>({
     resolver: zodResolver(businessSignupSchema),
     defaultValues: {
@@ -47,13 +58,71 @@ export function BusinessSignupForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof businessSignupSchema>) {
-    console.log(values);
-    toast({
-      title: '¡Cuenta Creada!',
-      description: 'Tu cuenta de empresa ha sido creada exitosamente.',
-    });
-    form.reset();
+  async function onSubmit(values: z.infer<typeof businessSignupSchema>) {
+    setIsLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      await updateProfile(user, {
+        displayName: values.companyName,
+      });
+
+      const userDocRef = doc(firestore, "users", user.uid);
+      const businessDocRef = doc(firestore, "businesses", user.uid);
+
+      const userData = {
+        id: user.uid,
+        email: values.email,
+        userType: 'business',
+      };
+
+      const businessData = {
+        id: user.uid,
+        companyName: values.companyName,
+        legalRepresentativeName: values.legalRepName,
+        email: values.email,
+        rfc: values.rfc,
+        phoneNumber: values.phone,
+      };
+
+      await setDoc(userDocRef, userData)
+        .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'create',
+                requestResourceData: userData
+            }));
+            throw error;
+        });
+
+      await setDoc(businessDocRef, businessData)
+        .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: businessDocRef.path,
+                operation: 'create',
+                requestResourceData: businessData
+            }));
+            throw error;
+        });
+
+      toast({
+        title: '¡Cuenta de Empresa Creada!',
+        description: 'Tu cuenta ha sido creada exitosamente. Redirigiendo...',
+      });
+      
+      router.push('/profile');
+
+    } catch (error: any) {
+      console.error('Error signing up:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al crear la cuenta',
+        description: error.message || 'Ocurrió un error inesperado.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -66,7 +135,7 @@ export function BusinessSignupForm() {
             <FormItem>
               <FormLabel>Nombre de la Empresa</FormLabel>
               <FormControl>
-                <Input placeholder="Constructora S.A. de C.V." {...field} />
+                <Input placeholder="Constructora S.A. de C.V." {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -79,7 +148,7 @@ export function BusinessSignupForm() {
             <FormItem>
               <FormLabel>Nombre del Representante Legal</FormLabel>
               <FormControl>
-                <Input placeholder="Jane Doe" {...field} />
+                <Input placeholder="Jane Doe" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -92,7 +161,7 @@ export function BusinessSignupForm() {
             <FormItem>
               <FormLabel>RFC</FormLabel>
               <FormControl>
-                <Input placeholder="XAXX010101000" {...field} />
+                <Input placeholder="XAXX010101000" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -105,7 +174,7 @@ export function BusinessSignupForm() {
             <FormItem>
               <FormLabel>Número Telefónico</FormLabel>
               <FormControl>
-                <Input placeholder="55 1234 5678" {...field} />
+                <Input placeholder="55 1234 5678" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -118,7 +187,7 @@ export function BusinessSignupForm() {
             <FormItem>
               <FormLabel>Correo Electrónico</FormLabel>
               <FormControl>
-                <Input placeholder="contact@constructora.com" {...field} />
+                <Input placeholder="contact@constructora.com" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -131,7 +200,7 @@ export function BusinessSignupForm() {
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input type="password" placeholder="••••••••" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -147,6 +216,7 @@ export function BusinessSignupForm() {
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
+                  disabled={isLoading}
                 />
               </FormControl>
                <div className="space-y-1 leading-none">
@@ -206,8 +276,8 @@ export function BusinessSignupForm() {
           )}
         />
 
-        <Button type="submit" className="w-full font-bold">
-          Crear Cuenta de Empresa
+        <Button type="submit" className="w-full font-bold" disabled={isLoading}>
+          {isLoading ? 'Creando cuenta...' : 'Crear Cuenta de Empresa'}
         </Button>
       </form>
     </Form>

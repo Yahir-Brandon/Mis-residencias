@@ -4,24 +4,18 @@ import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ThemeToggle } from '../theme-toggle';
-import { useEffect, useState } from 'react';
 import { User, LogOut } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useUser, useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 export function Header() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user } = useUser();
+  const auth = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // Check for auth status on client side
-    const authStatus = localStorage.getItem('isAuthenticated');
-    setIsAuthenticated(authStatus === 'true');
-  }, [pathname]); // Re-check on route change
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    setIsAuthenticated(false);
+    signOut(auth);
     router.push('/');
   };
 
@@ -31,7 +25,7 @@ export function Header() {
         <Logo />
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          {isAuthenticated ? (
+          {user ? (
             <>
               <Button variant="ghost" asChild>
                 <Link href="/profile" className='flex items-center gap-2'>
@@ -62,5 +56,3 @@ export function Header() {
     </header>
   );
 }
-
-    
