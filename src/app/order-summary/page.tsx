@@ -183,10 +183,14 @@ function OrderSummaryContent() {
                       locale={es}
                       className="p-0"
                       classNames={{
+                        head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
+                        cell: "h-8 w-8 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                        day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100",
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
                         day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                        day_range_start: "bg-red-500 text-white rounded-l-full",
-                        day_range_end: "bg-green-500 text-white rounded-r-full",
-                        day_range_middle: "bg-blue-200"
+                        day_range_start: "day-range-start !bg-red-500 !text-white",
+                        day_range_end: "day-range-end !bg-green-500 !text-white",
+                        day_range_middle: "aria-selected:bg-primary/20 aria-selected:text-primary-foreground"
                       }}
                       disabled
                    />
