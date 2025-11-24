@@ -8,7 +8,6 @@ import { useEffect, useState, useRef } from 'react';
 import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { Loader2, FileDown, Home } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
@@ -58,6 +57,9 @@ function OrderSummaryContent() {
     setIsGeneratingPdf(true);
 
     try {
+      const jsPDF = (await import('jspdf')).default;
+      require('jspdf-autotable');
+
       const doc = new jsPDF();
       const deliveryStart = new Date(orderData.deliveryDates.from);
       const deliveryEnd = new Date(orderData.deliveryDates.to);
