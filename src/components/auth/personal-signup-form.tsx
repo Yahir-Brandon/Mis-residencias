@@ -97,7 +97,6 @@ export function PersonalSignupForm() {
       router.push('/profile');
 
     } catch (error: any) {
-      console.error('Error signing up:', error);
       toast({
         variant: 'destructive',
         title: 'Error al crear la cuenta',

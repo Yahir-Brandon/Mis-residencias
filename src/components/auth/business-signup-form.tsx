@@ -117,7 +117,6 @@ export function BusinessSignupForm() {
       router.push('/profile');
 
     } catch (error: any) {
-      console.error('Error signing up:', error);
       toast({
         variant: 'destructive',
         title: 'Error al crear la cuenta',
@@ -253,7 +252,7 @@ export function BusinessSignupForm() {
                 <Button 
                   type="button" 
                   variant="ghost" 
-                  size="sm" 
+                  size="sm" _
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-3"
                   onClick={() => setShowPassword(!showPassword)}
                 >

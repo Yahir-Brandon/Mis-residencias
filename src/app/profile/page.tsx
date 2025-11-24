@@ -16,6 +16,17 @@ export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
+    // If the user object exists, force a reload to check if the user is still valid
+    if (user) {
+      user.reload().catch(() => {
+        // If reload fails (e.g., user deleted), signOut will trigger onAuthStateChanged
+        // which will then cause the second useEffect to redirect.
+        signOut(auth);
+      });
+    }
+  }, [user, auth]);
+
+  useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
