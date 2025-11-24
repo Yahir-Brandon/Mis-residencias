@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
-import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate } from 'date-fns';
+import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import { Loader2, FileDown, Home } from 'lucide-react';
@@ -57,8 +57,8 @@ function OrderSummaryContent() {
     setIsGeneratingPdf(true);
 
     try {
-      const jsPDF = (await import('jspdf')).default;
-      require('jspdf-autotable');
+      const { default: jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
 
       const doc = new jsPDF();
       const deliveryStart = new Date(orderData.deliveryDates.from);
@@ -80,7 +80,7 @@ function OrderSummaryContent() {
         { title: 'Teléfono:', content: orderData.phone },
       ];
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 30,
         body: details,
         theme: 'plain',
@@ -113,7 +113,7 @@ function OrderSummaryContent() {
         `$${subtotal.toFixed(2)}`
       ]];
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: lastY + 15,
         head: [tableColumn],
         body: tableRows,
@@ -141,70 +141,97 @@ function OrderSummaryContent() {
       doc.setFontSize(12);
       doc.text('Periodo de Entrega Programado', 14, finalTableY + 25);
       
-      const month = getMonth(deliveryStart);
-      const year = getYear(deliveryStart);
-      const firstDayOfMonth = startOfMonth(deliveryStart);
-      const startDayOfWeek = (getDay(firstDayOfMonth) + 6) % 7;
-      const daysInMonth = getDaysInMonth(deliveryStart);
-      const monthName = format(deliveryStart, 'MMMM yyyy', { locale: es });
+      const drawMonth = (date: Date, xOffset: number, yOffset: number) => {
+        const month = getMonth(date);
+        const year = getYear(date);
+        const firstDayOfMonth = startOfMonth(date);
+        const startDayOfWeek = (getDay(firstDayOfMonth) + 6) % 7;
+        const daysInMonth = getDaysInMonth(date);
+        const monthName = format(date, 'MMMM yyyy', { locale: es });
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(monthName.charAt(0).toUpperCase() + monthName.slice(1), xOffset + (3.5 * 12), yOffset, { align: 'center' });
 
-      doc.setFontSize(10);
-      doc.text(monthName.charAt(0).toUpperCase() + monthName.slice(1), 105, finalTableY + 35, { align: 'center' });
+        const cellWidth = 12;
+        const cellHeight = 8;
+        const startX = xOffset;
+        const calendarY = yOffset + 5;
+        const dayHeaders = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
-      const cellWidth = 12;
-      const cellHeight = 8;
-      const startX = 14;
-      const calendarY = finalTableY + 40;
-      const dayHeaders = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+        doc.setFontSize(8);
+        dayHeaders.forEach((header, index) => {
+            doc.text(header, startX + index * cellWidth + cellWidth / 2, calendarY, { align: 'center' });
+        });
 
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      dayHeaders.forEach((header, index) => {
-          doc.text(header, startX + index * cellWidth + cellWidth / 2, calendarY, { align: 'center' });
-      });
+        let currentDay = 1;
+        doc.setFont('helvetica', 'normal');
+        doc.setLineWidth(0.2);
 
-      let currentDay = 1;
-      doc.setFont('helvetica', 'normal');
-      doc.setLineWidth(0.2);
+        for (let week = 0; week < 6; week++) {
+            for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+                if ((week === 0 && dayOfWeek < startDayOfWeek) || currentDay > daysInMonth) {
+                    continue;
+                }
 
-      for (let week = 0; week < 6; week++) {
-          for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-              if ((week === 0 && dayOfWeek < startDayOfWeek) || currentDay > daysInMonth) {
-                  continue;
-              }
+                const x = startX + dayOfWeek * cellWidth;
+                const y = calendarY + (week + 1) * cellHeight;
 
-              const x = startX + dayOfWeek * cellWidth;
-              const y = calendarY + (week + 1) * cellHeight;
+                const currentDate = new Date(year, month, currentDay);
+                const isStartDate = getDate(currentDate) === getDate(deliveryStart) && getMonth(currentDate) === getMonth(deliveryStart) && getYear(currentDate) === getYear(deliveryStart);
+                const isEndDate = getDate(currentDate) === getDate(deliveryEnd) && getMonth(currentDate) === getMonth(deliveryEnd) && getYear(currentDate) === getYear(deliveryEnd);
+                const isInRange = currentDate > deliveryStart && currentDate < deliveryEnd;
+                
+                const originalTextColor = doc.getTextColor();
+                
+                if (isStartDate) {
+                    doc.setFillColor(220, 53, 69); // Red
+                    doc.setTextColor(255, 255, 255);
+                    doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
+                } else if (isEndDate) {
+                    doc.setFillColor(25, 135, 84); // Green
+                    doc.setTextColor(255, 255, 255);
+                    doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
+                } else if (isInRange) {
+                    doc.setFillColor(233, 236, 239); // Light gray
+                    doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
+                }
+                
+                doc.text(String(currentDay), x + cellWidth / 2, y, { align: 'center' });
+                doc.setTextColor(originalTextColor);
 
-              const currentDate = new Date(year, month, currentDay);
-              const isStartDate = getDate(currentDate) === getDate(deliveryStart);
-              const isEndDate = getDate(currentDate) === getDate(deliveryEnd);
-              const isInRange = currentDate > deliveryStart && currentDate < deliveryEnd;
+                currentDay++;
+            }
+            if (currentDay > daysInMonth) break;
+        }
+      };
 
-              let originalTextColor = doc.getTextColor();
-              
-              if (isStartDate) {
-                  doc.setFillColor(220, 53, 69); // Red
-                  doc.setTextColor(255, 255, 255);
-                  doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
-              } else if (isEndDate) {
-                  doc.setFillColor(25, 135, 84); // Green
-                  doc.setTextColor(255, 255, 255);
-                  doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
-              } else if (isInRange) {
-                  doc.setFillColor(233, 236, 239); // Light gray
-                  doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
-              }
-              
-              doc.text(String(currentDay), x + cellWidth / 2, y, { align: 'center' });
-              
-              doc.setTextColor(originalTextColor);
-
-              currentDay++;
-          }
-          if (currentDay > daysInMonth) break;
-      }
+      const startMonth = getMonth(deliveryStart);
+      const endMonth = getMonth(deliveryEnd);
       
+      let calendarYPos = finalTableY + 35;
+      
+      drawMonth(deliveryStart, 14, calendarYPos);
+
+      if(startMonth !== endMonth) {
+        drawMonth(deliveryEnd, 110, calendarYPos);
+      }
+
+      // Legend
+      const legendY = calendarYPos + 6 * 8 + 15;
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      
+      // Start Date
+      doc.setFillColor(220, 53, 69); // Red
+      doc.rect(14, legendY - 2, 3, 3, 'F');
+      doc.text('Inicio de entrega', 20, legendY);
+
+      // End Date
+      doc.setFillColor(25, 135, 84); // Green
+      doc.rect(50, legendY - 2, 3, 3, 'F');
+      doc.text('Fin de entrega', 56, legendY);
+
       doc.save(`pedido-${orderData.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
 
     } catch (error) {
@@ -321,15 +348,16 @@ function OrderSummaryContent() {
                       selected={{ from: deliveryStart, to: deliveryEnd }}
                       defaultMonth={deliveryStart}
                       locale={es}
+                      numberOfMonths={2}
                       className="p-0"
                       classNames={{
                         head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
                         cell: "h-8 w-8 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
                         day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100",
-                        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                        day_selected: "bg-primary/20 text-primary-foreground",
                         day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                        day_range_start: "day-range-start !bg-red-500 !text-white",
-                        day_range_end: "day-range-end !bg-green-500 !text-white",
+                        day_range_start: "day-range-start !bg-red-500 !text-white rounded-md",
+                        day_range_end: "day-range-end !bg-green-500 !text-white rounded-md",
                         day_range_middle: "aria-selected:bg-primary/20 aria-selected:text-primary-foreground"
                       }}
                       disabled
