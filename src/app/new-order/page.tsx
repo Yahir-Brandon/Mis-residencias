@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { es } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { analyzeDeliveryDate } from "@/ai/flows/analyze-delivery-date-flow";
+import { useRouter } from "next/navigation";
 
 
 const orderSchema = z.object({
@@ -31,7 +32,7 @@ const orderSchema = z.object({
   state: z.string().min(1, { message: "Debes seleccionar un estado." }),
   municipality: z.string().min(1, { message: "Debes seleccionar un municipio/delegación." }),
   material: z.string().min(1, { message: "Debes seleccionar un material." }),
-  quantity: z.coerce.number().min(1, { message: "La cantidad debe ser al menos 1." }),
+  quantity: z.coerce.number().min(1, { message: "La cantidad debe ser mayor a 0." }),
   deliveryDates: z.object({
     from: z.date({ required_error: "La fecha de inicio es requerida."}),
     to: z.date({ required_error: "La fecha de fin es requerida."}),
@@ -53,6 +54,7 @@ const materials: Material[] = [
 
 export default function NewOrderPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [selectedState, setSelectedState] = useState<State | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -122,14 +124,9 @@ export default function NewOrderPage() {
   };
 
   function onSubmit(values: z.infer<typeof orderSchema>) {
-    console.log({...values, total});
-    toast({
-      title: "Pedido Enviado",
-      description: "Hemos recibido tu pedido correctamente.",
-    });
-    form.reset();
-    setSelectedState(null);
-    setSelectedMaterial(null);
+    const orderData = { ...values, total, unit: selectedMaterial?.unit };
+    const queryString = encodeURIComponent(JSON.stringify(orderData));
+    router.push(`/order-summary?data=${queryString}`);
   }
 
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
@@ -358,8 +355,7 @@ export default function NewOrderPage() {
                               {...field}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                // Allow empty string or numbers
-                                if (value === '' || /^\d+$/.test(value)) {
+                                if (value === '' || /^\d*$/.test(value)) {
                                    field.onChange(value === '' ? 0 : parseInt(value, 10));
                                 }
                               }}
@@ -443,8 +439,8 @@ export default function NewOrderPage() {
                             disabled={{ before: new Date() }}
                             classNames={{
                               day_today: "bg-primary/90 text-primary-foreground rounded-md",
-                              day_range_start: "day-range-start",
-                              day_range_end: "day-range-end",
+                              day_range_start: "bg-red-500 text-white",
+                              day_range_end: "bg-green-500 text-white",
                             }}
                           />
                           <DialogFooter>
@@ -487,3 +483,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
