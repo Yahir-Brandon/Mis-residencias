@@ -51,7 +51,6 @@ function OrderSummaryContent() {
 
   useEffect(() => {
     if (!isOrderLoading && !orderData && orderId) {
-        console.error("No se encontró el pedido o hubo un error:", error);
         router.push('/new-order');
     }
   }, [orderData, isOrderLoading, orderId, router, error]);
@@ -407,3 +406,5 @@ export default function OrderSummaryPage() {
         </Suspense>
     )
 }
+
+    
