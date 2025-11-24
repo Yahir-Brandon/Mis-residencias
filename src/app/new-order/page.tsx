@@ -354,7 +354,7 @@ export default function NewOrderPage() {
                           <Button
                             variant={"outline"}
                             className={cn(
-                              "w-[300px] justify-start text-left font-normal",
+                              "w-[340px] justify-start text-left font-normal",
                               !field.value.from && "text-muted-foreground"
                             )}
                           >
@@ -422,5 +422,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-
-    
