@@ -46,11 +46,9 @@ export default function ProfilePage() {
             setIsAdmin(true);
           }
         } else {
-          // El documento del usuario no existe, así que lo desconectamos
           signOut(auth).finally(() => router.push('/login'));
         }
       } catch (error) {
-        // Un error aquí (p.ej. 'auth/user-token-expired', 'auth/user-not-found') indica que el usuario ya no es válido.
         console.error("El token de usuario es inválido o el usuario fue eliminado, forzando cierre de sesión:", error);
         signOut(auth).finally(() => router.push('/login'));
       } finally {
@@ -84,7 +82,7 @@ export default function ProfilePage() {
   if (isAdmin) {
     return (
       <SidebarProvider>
-          <div className="flex h-[calc(100vh-4rem)]">
+          <div className="flex h-screen bg-muted/40">
               <Sidebar className="h-full">
                   <SidebarHeader>
                     <div className="flex items-center justify-between w-full">
@@ -92,7 +90,7 @@ export default function ProfilePage() {
                     </div>
                   </SidebarHeader>
                   <SidebarContent className="p-2">
-                       <Card className="shadow-none border-none">
+                       <Card className="shadow-none border-none bg-transparent">
                           <CardHeader className="items-center text-center p-4">
                               <Avatar className="h-24 w-24 mb-2">
                                   <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Admin'} />
@@ -131,15 +129,19 @@ export default function ProfilePage() {
                     </Button>
                   </div>
               </Sidebar>
-              <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-                  <div className="flex items-center gap-4 mb-6">
-                    <SidebarTrigger />
-                    <h1 className="text-2xl md:text-3xl font-bold font-headline">Administrador General</h1>
-                  </div>
-                  <div className="space-y-8">
+              <div className="flex-1 overflow-y-auto">
+                <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b">
+                   <div className="container mx-auto flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
+                      <SidebarTrigger />
+                      <h1 className="text-xl md:text-2xl font-bold font-headline">Panel de Administración</h1>
+                    </div>
+                </header>
+                <main className="p-4 sm:p-6 lg:p-8">
+                  <div className="grid gap-8 auto-rows-max">
                       <UserList />
                       <BusinessList />
                   </div>
+                </main>
               </div>
           </div>
       </SidebarProvider>
@@ -149,7 +151,6 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* User Profile Card */}
         <div className="md:col-span-1">
           <Card className="w-full shadow-lg">
             <CardHeader className="items-center text-center">
@@ -189,7 +190,6 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        {/* Dashboard Section */}
         <div className="md:col-span-2">
             <h2 className="text-3xl font-bold font-headline mb-6">Panel de Control</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

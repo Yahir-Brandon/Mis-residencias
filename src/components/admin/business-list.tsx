@@ -4,6 +4,7 @@ import { collection } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Briefcase, AlertTriangle } from 'lucide-react';
+import { ScrollArea } from '../ui/scroll-area';
 
 export default function BusinessList() {
   const firestore = useFirestore();
@@ -20,6 +21,7 @@ export default function BusinessList() {
         <CardDescription>Lista de todas las empresas registradas.</CardDescription>
       </CardHeader>
       <CardContent>
+        <ScrollArea className="h-72">
           <Table>
             <TableHeader>
               <TableRow>
@@ -33,14 +35,14 @@ export default function BusinessList() {
             <TableBody>
               {isLoading && (
                  <TableRow>
-                  <TableCell colSpan={5} className="text-center">
+                  <TableCell colSpan={5} className="text-center h-24">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
                   </TableCell>
                 </TableRow>
               )}
               {error && (
                  <TableRow>
-                   <TableCell colSpan={5} className="text-center text-destructive">
+                   <TableCell colSpan={5} className="text-center h-24 text-destructive">
                     <div className="flex items-center justify-center gap-2">
                       <AlertTriangle className="h-5 w-5"/>
                       <span>Error al cargar empresas: Permisos insuficientes.</span>
@@ -59,13 +61,14 @@ export default function BusinessList() {
               ))}
                {!isLoading && !error && businesses?.length === 0 && (
                  <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     No se encontraron empresas.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
