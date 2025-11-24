@@ -4,6 +4,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ShieldCheck, Users, Truck, BrainCircuit } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const heroImage = PlaceHolderImages.find((img) => img.id === 'hero');
 
@@ -28,6 +29,29 @@ const whyChooseUs = [
     title: 'Análisis Inteligente',
     description: 'Nuestra IA analiza la urgencia de tu pedido basándose en las fechas de entrega para optimizar la logística y asegurar que tus materiales lleguen justo cuando los necesitas.',
   },
+];
+
+const featuredMaterials = [
+    {
+      name: 'Cemento',
+      description: 'La base para cualquier construcción sólida y duradera. Ofrecemos las mejores marcas del mercado.',
+      image: PlaceHolderImages.find((img) => img.id === 'cement'),
+    },
+    {
+      name: 'Ladrillos',
+      description: 'Variedad de ladrillos y bloques para muros y fachadas con la resistencia que tu obra necesita.',
+      image: PlaceHolderImages.find((img) => img.id === 'bricks'),
+    },
+    {
+      name: 'Varillas de Acero',
+      description: 'El refuerzo esencial para estructuras de concreto, cumpliendo con todas las normativas de seguridad.',
+      image: PlaceHolderImages.find((img) => img.id === 'rebar'),
+    },
+    {
+      name: 'Madera para Construcción',
+      description: 'Madera de primera calidad, tratada para resistir y perfecta para cimbras, estructuras y acabados.',
+      image: PlaceHolderImages.find((img) => img.id === 'wood'),
+    },
 ];
 
 export default function Home() {
@@ -81,6 +105,46 @@ export default function Home() {
                   {reason.description}
                 </p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="featured-materials" className="py-16 md:py-24 bg-secondary">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl md:text-4xl font-headline font-bold text-center mb-12">
+            Nuestros Materiales Destacados
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {featuredMaterials.map((material, index) => (
+              <Card 
+                key={material.name}
+                className="overflow-hidden flex flex-col transform hover:scale-105 transition-transform duration-300 shadow-lg"
+                style={{ animationDelay: `${200 * (index + 2)}ms` }}
+              >
+                {material.image && (
+                    <div className="relative h-48 w-full">
+                        <Image
+                            src={material.image.imageUrl}
+                            alt={material.image.description}
+                            fill
+                            className="object-cover"
+                            data-ai-hint={material.image.imageHint}
+                        />
+                    </div>
+                )}
+                <CardHeader>
+                  <CardTitle>{material.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <CardDescription>{material.description}</CardDescription>
+                </CardContent>
+                <CardFooter>
+                  <Button asChild className="w-full font-bold">
+                    <Link href="/new-order">Cotizar Ahora</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
             ))}
           </div>
         </div>
