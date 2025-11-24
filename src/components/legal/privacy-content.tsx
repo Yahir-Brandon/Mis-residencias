@@ -29,7 +29,7 @@ export function PrivacyContent() {
 
                 <h2 className="text-2xl font-semibold mt-6 mb-4">3. Seguridad de los Datos</h2>
                 <p>
-                    La seguridad de tus datos es importante para nosotros, pero recuerda que ningún método de transmisión por Internet o método de almacenamiento electrónico es 100% seguro. Si bien nos esforzamos por utilizar medios comercialmente aceptables para proteger tus Datos Personales, no podemos garantizar su seguridad absoluta.
+                    Nos comprometemos a proteger la seguridad de tu información personal. Implementamos medidas de seguridad técnicas, administrativas y físicas, diseñadas para proteger tus datos contra el acceso, la divulgación, la alteración o la destrucción no autorizados. Tu confianza es fundamental para nosotros y nos esforzamos por proteger tu información en todo momento.
                 </p>
 
                 <h2 className="text-2xl font-semibold mt-6 mb-4">4. Enlaces a Otros Sitios</h2>
