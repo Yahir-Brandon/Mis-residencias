@@ -49,6 +49,8 @@ function Calendar({
         day_disabled: "text-muted-foreground opacity-50",
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
+        day_range_start:
+          "[&:has(+[aria-selected])]:rounded-r-none [&:not(:has(+[aria-selected]))]:rounded-md",
         day_hidden: "invisible",
         ...classNames,
       }}

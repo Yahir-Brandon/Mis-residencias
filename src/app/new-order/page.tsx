@@ -394,9 +394,9 @@ export default function NewOrderPage() {
                             locale={es}
                             className="p-4"
                             classNames={{
-                              day_today: "bg-primary text-primary-foreground",
-                              day_range_start: "bg-destructive text-destructive-foreground",
-                              day_range_end: "bg-green-600 text-white",
+                              day_today: "bg-primary/90 text-primary-foreground",
+                              day_range_start: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                              day_range_end: "bg-green-600 text-white hover:bg-green-700",
                             }}
                           />
                           <DialogFooter>
