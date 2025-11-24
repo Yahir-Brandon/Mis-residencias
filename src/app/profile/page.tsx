@@ -85,7 +85,10 @@ export default function ProfilePage() {
           <div className="flex h-[calc(100vh-4rem)]">
               <Sidebar className="h-full">
                   <SidebarHeader>
+                    <div className="flex items-center justify-between w-full">
                       <Logo />
+                      <SidebarTrigger />
+                    </div>
                   </SidebarHeader>
                   <SidebarContent className="p-2">
                        <Card className="shadow-none border-none">
@@ -129,7 +132,6 @@ export default function ProfilePage() {
               </Sidebar>
               <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
                   <div className="flex items-center gap-4 mb-6">
-                    <SidebarTrigger />
                     <h1 className="text-2xl md:text-3xl font-bold font-headline">Administrador General</h1>
                   </div>
                   <div className="space-y-8">
