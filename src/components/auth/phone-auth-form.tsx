@@ -30,12 +30,14 @@ export function PhoneAuthForm() {
 
   // Inicializar reCAPTCHA
   useEffect(() => {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      'size': 'invisible',
-      'callback': (response: any) => {
-        // reCAPTCHA resuelto, permite signInWithPhoneNumber.
-      }
-    });
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA resuelto, permite signInWithPhoneNumber.
+        }
+      });
+    }
   }, [auth]);
 
   const phoneForm = useForm<z.infer<typeof phoneAuthSchema>>({
