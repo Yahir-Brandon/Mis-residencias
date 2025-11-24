@@ -151,7 +151,7 @@ export function BusinessSignupForm() {
               </FormControl>
                <div className="space-y-1 leading-none">
                 <FormLabel>
-                  Acepto los términos y condiciones.
+                  He leído y acepto los Términos y Condiciones del Servicio
                 </FormLabel>
                 <FormDescription>
                   Al registrarte, aceptas nuestros{' '}
