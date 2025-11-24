@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the ConstructConnect application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "userType": {
+          "type": "string",
+          "description": "Type of user (normal or business).",
+          "format": "string"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "userType"
+      ]
+    },
+    "Business": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Business",
+      "type": "object",
+      "description": "Represents a business user of the ConstructConnect application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the business."
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Name of the company."
+        },
+        "legalRepresentativeName": {
+          "type": "string",
+          "description": "Name of the legal representative of the company."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the company.",
+          "format": "email"
+        },
+        "rfc": {
+          "type": "string",
+          "description": "RFC (Tax ID) of the company."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number of the company."
+        }
+      },
+      "required": [
+        "id",
+        "companyName",
+        "legalRepresentativeName",
+        "email",
+        "rfc",
+        "phoneNumber"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product available for sale.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the product."
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the product image.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "price",
+        "imageUrl"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores individual user profiles. Uses path-based ownership, ensuring only the user can access their own profile data. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/businesses/{businessId}",
+        "definition": {
+          "entityName": "Business",
+          "schema": {
+            "$ref": "#/backend/entities/Business"
+          },
+          "description": "Stores business user profiles. Uses path-based ownership, ensuring only the business can access their own profile data. Includes denormalized 'businessId' for authorization independence.",
+          "params": [
+            {
+              "name": "businessId",
+              "description": "Unique identifier for the business."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information. No specific authorization concerns for initial setup.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "Unique identifier for the product."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage users (both normal and business) and products for the ConstructConnect application. It prioritizes authorization independence by using path-based ownership for user data. User profiles are stored directly under the `/users/{userId}` collection, which provides a secure and scalable way to manage user-specific data. Business profiles are stored similarly under `/businesses/{businessId}`. Products are stored in a separate `/products` collection. This segregation simplifies security rules and enhances query performance.  This structure is designed to facilitate basic user registration and login, and provides a solid foundation for future enhancements."
+  }
+}
