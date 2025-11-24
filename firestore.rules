@@ -8,12 +8,13 @@
  * - /users/{userId}: Datos comunes del usuario (ej. email, userType). El ID del documento es el UID de autenticación.
  * - /businesses/{userId}: Almacena datos específicos de empresas para usuarios de tipo empresa.
  * - /products/{productId}: Almacena listados de productos, que son públicos.
+ * - /orders/{orderId}: Almacena pedidos de clientes.
  *
  * Decisiones Clave de Seguridad:
  * - Propiedad Basada en la Ruta: Todos los datos específicos del usuario se almacenan en documentos
  *   donde el ID coincide con el UID de autenticación del usuario.
  * - Acceso de Lectura para Administradores: Los usuarios con `userType == 'admin'` pueden leer todos los documentos
- *   en las colecciones `/users` y `/businesses`, pero no pueden escribir en ellos. Esto
+ *   en las colecciones `/users`, `/businesses` y `/orders` pero no pueden escribir en ellos (excepto sus propios datos).
  *   proporciona supervisión del sistema sin permitir suplantación o manipulación de datos.
  * - Listado de Usuarios Restringido: Los usuarios regulares no pueden listar el contenido de las
  *   colecciones '/users' o '/businesses' para proteger la privacidad.
@@ -22,6 +23,7 @@
  * - Visibilidad Pública de Productos: La colección '/products' es de lectura pública.
  * - Acceso de Escritura a Productos Restringido: Todas las operaciones de escritura en productos
  *   están deshabilitadas como una medida de seguridad por defecto.
+ * - Propiedad de Pedidos: Los usuarios solo pueden crear pedidos para sí mismos y leer sus propios pedidos.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -104,6 +106,21 @@ service cloud.firestore {
     match /products/{productId} {
       allow get, list: if true; // Lectura pública
       allow create, update, delete: if false;
+    }
+
+    // ----------------------------------------------------------------------
+    // Colección: orders
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Controla el acceso a los pedidos de los clientes.
+     * @path /orders/{orderId}
+     */
+    match /orders/{orderId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin(); // Solo los administradores pueden listar todos los pedidos.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // Los pedidos no se pueden modificar ni eliminar por ahora.
     }
   }
 }

@@ -114,6 +114,80 @@
         "price",
         "imageUrl"
       ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents a customer order for materials.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who placed the order."
+        },
+        "requesterName": {
+          "type": "string"
+        },
+        "projectName": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "street": {
+          "type": "string"
+        },
+        "number": {
+          "type": "string"
+        },
+        "postalCode": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "municipality": {
+          "type": "string"
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "quantity": { "type": "number" }
+            },
+            "required": ["name", "quantity"]
+          }
+        },
+        "deliveryDates": {
+          "type": "object",
+          "properties": {
+            "from": { "type": "string", "format": "date-time" },
+            "to": { "type": "string", "format": "date-time" }
+          },
+          "required": ["from", "to"]
+        },
+        "total": {
+          "type": "number"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["Urgente", "Pronto", "Normal"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the order was created."
+        }
+      },
+      "required": [
+        "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "createdAt"
+      ]
     }
   },
   "auth": {
@@ -170,8 +244,22 @@
             }
           ]
         }
+      },
+      {
+        "path": "/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": { "$ref": "#/backend/entities/Order" },
+          "description": "Stores all customer orders. Admins can read all orders, while users can only read/write their own.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "Unique identifier for the order."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed for a secure, user-centric application. The primary `/users/{userId}` collection uses the Firebase Auth UID as the document ID, creating a direct and secure link between the authenticated user and their data. This path-based ownership is the cornerstone of the security rules. For business accounts, a separate `/businesses/{businessId}` collection is used, also keyed by the user's UID, to cleanly segregate business-specific data from personal user data, simplifying rules and queries. Products are in a separate, publicly readable collection to allow browsing for all users. This design ensures that users can only access their own information, prevents data leakage between user types, and provides a scalable foundation."
+    "reasoning": "The Firestore structure is designed for a secure, user-centric application. The primary `/users/{userId}` collection uses the Firebase Auth UID as the document ID, creating a direct and secure link between the authenticated user and their data. This path-based ownership is the cornerstone of the security rules. For business accounts, a separate `/businesses/{businessId}` collection is used, also keyed by the user's UID, to cleanly segregate business-specific data from personal user data, simplifying rules and queries. Products are in a separate, publicly readable collection to allow browsing for all users. A top-level `/orders` collection is used to store all customer orders. Security rules ensure that users can only create and read their own orders, while administrators can read all orders for management purposes."
   }
 }

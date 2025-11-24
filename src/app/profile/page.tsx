@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import UserList from "@/components/admin/user-list";
 import BusinessList from "@/components/admin/business-list";
+import OrderList from "@/components/admin/order-list";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -79,8 +80,8 @@ export default function ProfilePage() {
   if (isAdmin) {
     return (
         <div className="container mx-auto py-12 px-4 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div className="md:col-span-1">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div className="lg:col-span-1">
                     <Card className="w-full shadow-lg">
                         <CardHeader className="items-center text-center">
                             <Avatar className="h-24 w-24 mb-2">
@@ -110,7 +111,8 @@ export default function ProfilePage() {
                         </CardContent>
                     </Card>
                 </div>
-                <div className="md:col-span-3 space-y-8">
+                <div className="lg:col-span-3 space-y-8">
+                    <OrderList />
                     <UserList />
                     <BusinessList />
                 </div>

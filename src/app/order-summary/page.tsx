@@ -14,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Calendar } from '@/components/ui/calendar';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 
 // Aumenta jsPDF con el método autoTable
@@ -34,24 +36,25 @@ const materialsList = [
 function OrderSummaryContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [orderData, setOrderData] = useState<any>(null);
+  const firestore = useFirestore();
+
+  const orderId = searchParams.get('id');
+
+  const orderDocRef = useMemoFirebase(() => {
+    return orderId ? doc(firestore, 'orders', orderId) : null;
+  }, [firestore, orderId]);
+  
+  const { data: orderData, isLoading: isOrderLoading, error } = useDoc(orderDocRef);
+
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const data = searchParams.get('data');
-    if (data) {
-      try {
-        const parsedData = JSON.parse(decodeURIComponent(data));
-        setOrderData(parsedData);
-      } catch (error) {
-        console.error("Failed to parse order data", error);
+    if (!isOrderLoading && !orderData && orderId) {
+        console.error("No se encontró el pedido o hubo un error:", error);
         router.push('/new-order');
-      }
-    } else {
-       router.push('/new-order');
     }
-  }, [searchParams, router]);
+  }, [orderData, isOrderLoading, orderId, router, error]);
 
   const generatePdf = async () => {
     if (!orderData) return;
@@ -59,8 +62,8 @@ function OrderSummaryContent() {
 
     try {
       const doc = new jsPDF();
-      const deliveryStart = new Date(orderData.deliveryDates.from);
-      const deliveryEnd = new Date(orderData.deliveryDates.to);
+      const deliveryStart = new Date(orderData.deliveryDates.from.seconds * 1000);
+      const deliveryEnd = new Date(orderData.deliveryDates.to.seconds * 1000);
 
       // Encabezado
       doc.setFont('helvetica', 'bold');
@@ -172,6 +175,8 @@ function OrderSummaryContent() {
                 if ((week === 0 && dayOfWeek < startDayOfWeek) || currentDay > daysInMonth) {
                     continue;
                 }
+                const x = startX + dayOfWeek * cellWidth;
+                const y = calendarY + (week + 1) * cellHeight;
 
                 const currentDate = new Date(year, month, currentDay);
                 const isStartDate = getDate(currentDate) === getDate(deliveryStart) && getMonth(currentDate) === getMonth(deliveryStart) && getYear(currentDate) === getYear(deliveryStart);
@@ -237,13 +242,23 @@ function OrderSummaryContent() {
     }
   };
 
-  if (!orderData) {
+  if (isOrderLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!orderData) {
+    // This can happen briefly before the redirect.
+    return (
+       <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   const {
     requesterName,
@@ -259,8 +274,8 @@ function OrderSummaryContent() {
     total,
   } = orderData;
   
-  const deliveryStart = new Date(deliveryDates.from);
-  const deliveryEnd = new Date(deliveryDates.to);
+  const deliveryStart = new Date(deliveryDates.from.seconds * 1000);
+  const deliveryEnd = new Date(deliveryDates.to.seconds * 1000);
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">

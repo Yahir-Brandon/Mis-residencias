@@ -11,8 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, Plus, BrainCircuit, Trash2 } from "lucide-react";
+import { CalendarIcon, Plus, BrainCircuit, Trash2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -20,6 +19,11 @@ import { es } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { analyzeDeliveryDate } from "@/ai/flows/analyze-delivery-date-flow";
 import { useRouter } from "next/navigation";
+import { useAuth, useFirestore, useUser } from "@/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { useToast } from "@/hooks/use-toast";
 
 
 const materialOrderSchema = z.object({
@@ -58,10 +62,14 @@ const materialsList: Material[] = [
 
 export default function NewOrderPage() {
   const router = useRouter();
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
   const [selectedState, setSelectedState] = useState<State | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [deliveryAnalysis, setDeliveryAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
@@ -86,6 +94,12 @@ export default function NewOrderPage() {
     control: form.control,
     name: "materials"
   });
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
 
   const watchMaterials = form.watch('materials');
   const deliveryDates = form.watch('deliveryDates');
@@ -130,10 +144,47 @@ export default function NewOrderPage() {
     form.setValue('municipality', ''); // Reset municipality on state change
   };
 
-  function onSubmit(values: z.infer<typeof orderSchema>) {
-    const orderData = { ...values, total };
-    const queryString = encodeURIComponent(JSON.stringify(orderData));
-    router.push(`/order-summary?data=${queryString}`);
+  async function onSubmit(values: z.infer<typeof orderSchema>) {
+    if (!user || !deliveryAnalysis) return;
+    setIsSubmitting(true);
+    
+    const orderData = { 
+      ...values, 
+      total,
+      userId: user.uid,
+      priority: deliveryAnalysis,
+      createdAt: serverTimestamp(),
+     };
+
+    try {
+        const ordersCollectionRef = collection(firestore, 'orders');
+        const docRef = await addDoc(ordersCollectionRef, orderData)
+        .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: ordersCollectionRef.path,
+                operation: 'create',
+                requestResourceData: orderData
+            }));
+            throw error;
+        });
+
+        toast({
+            title: "Pedido Enviado",
+            description: "Tu pedido se ha guardado correctamente.",
+        });
+
+        router.push(`/order-summary?id=${docRef.id}`);
+
+    } catch(error) {
+        console.error("Error al guardar el pedido:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al enviar el pedido",
+            description: "No se pudo guardar tu pedido. Por favor, intenta de nuevo.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
@@ -518,8 +569,15 @@ export default function NewOrderPage() {
               />
 
               <div className="flex justify-end pt-4">
-                  <Button size="lg" type="submit" disabled={!form.formState.isValid}>
-                      Enviar Pedido
+                  <Button size="lg" type="submit" disabled={!form.formState.isValid || isSubmitting || !deliveryAnalysis}>
+                      {isSubmitting ? (
+                          <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Enviando...
+                          </>
+                      ) : (
+                        'Enviar Pedido'
+                      )}
                   </Button>
               </div>
             </form>
@@ -529,5 +587,3 @@ export default function NewOrderPage() {
     </div>
   );
 }
-
-    
