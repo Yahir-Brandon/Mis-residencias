@@ -46,10 +46,12 @@ export default function ProfilePage() {
             setIsAdmin(true);
           }
         } else {
+          // El documento del usuario no existe, así que lo desconectamos
           signOut(auth).finally(() => router.push('/login'));
         }
       } catch (error) {
-        console.error("User token is invalid or user deleted, forcing sign out:", error);
+        // Un error aquí (p.ej. 'auth/user-token-expired', 'auth/user-not-found') indica que el usuario ya no es válido.
+        console.error("El token de usuario es inválido o el usuario fue eliminado, forzando cierre de sesión:", error);
         signOut(auth).finally(() => router.push('/login'));
       } finally {
         setIsLoadingProfile(false);
