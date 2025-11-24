@@ -2,8 +2,8 @@
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, orderBy, query, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -27,10 +27,39 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { Separator } from '../ui/separator';
+import { Logo } from '../logo';
+import { useState } from 'react';
+
+// Aumenta jsPDF con el método autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
+
+const materialsList = [
+  { name: "cemento", price: 250, unit: "bulto" },
+  { name: "mortero", price: 220, unit: "bulto" },
+  { name: "cal", price: 80, unit: "bulto" },
+  { name: "alambre", price: 15, unit: "kg" },
+];
 
 type OrderStatus = 'Pendiente' | 'En proceso' | 'Enviado' | 'Entregado' | 'Cancelado';
 
@@ -55,6 +84,8 @@ export default function OrderList() {
   const router = useRouter();
   const ordersCollectionRef = useMemoFirebase(() => query(collection(firestore, 'orders'), orderBy('createdAt', 'desc')), [firestore]);
   const { data: orders, isLoading, error } = useCollection(ordersCollectionRef);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     const orderDocRef = doc(firestore, 'orders', orderId);
@@ -109,8 +140,100 @@ export default function OrderList() {
     }
   }
 
-  const handleViewDetails = (orderId: string) => {
-    router.push(`/order-summary?id=${orderId}`);
+  const handleViewDetails = (order: any) => {
+    setSelectedOrder(order);
+  };
+
+  const generatePdf = async () => {
+    if (!selectedOrder) return;
+    setIsGeneratingPdf(true);
+
+    try {
+      const doc = new jsPDF();
+      const deliveryStart = new Date(selectedOrder.deliveryDates.from.seconds * 1000);
+      const deliveryEnd = new Date(selectedOrder.deliveryDates.to.seconds * 1000);
+
+      // Encabezado
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
+
+      // Información del Pedido
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      const details = [
+        { title: 'Solicitante:', content: selectedOrder.requesterName },
+        { title: 'Obra:', content: selectedOrder.projectName },
+        { title: 'Dirección:', content: `${selectedOrder.street} ${selectedOrder.number}, ${selectedOrder.municipality}, ${selectedOrder.state}, C.P. ${selectedOrder.postalCode}` },
+        { title: 'Teléfono:', content: selectedOrder.phone },
+      ];
+
+      doc.autoTable({
+        startY: 30,
+        body: details,
+        theme: 'plain',
+        styles: {
+          cellPadding: { top: 1, right: 2, bottom: 1, left: 0 },
+          fontSize: 10,
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 40 },
+          1: { cellWidth: 'auto' },
+        },
+      });
+      
+      const lastY = (doc as any).lastAutoTable.finalY || 60;
+      
+      // Tabla de Materiales
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Detalles del Pedido', 14, lastY + 10);
+
+      const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
+      const tableRows = selectedOrder.materials.map((material: any) => {
+        const materialInfo = materialsList.find(m => m.name === material.name);
+        const unitPrice = materialInfo?.price || 0;
+        const subtotal = material.quantity * unitPrice;
+        return [
+            material.name,
+            `${material.quantity} ${materialInfo?.unit}(s)`,
+            `$${unitPrice.toFixed(2)}`,
+            `$${subtotal.toFixed(2)}`
+        ];
+      });
+
+      doc.autoTable({
+        startY: lastY + 15,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        styles: { fontSize: 10 },
+        didDrawPage: (data) => {
+          // Pie de página
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        }
+      });
+      
+      let finalTableY = (doc as any).lastAutoTable.finalY;
+
+      // Total
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
+      doc.text(`$${selectedOrder.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
+
+      doc.save(`pedido-${selectedOrder.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
+
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
 
@@ -182,10 +305,12 @@ export default function OrderList() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleViewDetails(order.id)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Ver Detalles del Pedido
-                        </DropdownMenuItem>
+                        <DialogTrigger asChild>
+                           <DropdownMenuItem onSelect={() => handleViewDetails(order)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Ver Detalles del Pedido
+                          </DropdownMenuItem>
+                        </DialogTrigger>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleStatusChange(order.id, 'En proceso')}>
                             <Package className="mr-2 h-4 w-4" />
@@ -241,6 +366,104 @@ export default function OrderList() {
             )}
           </TableBody>
         </Table>
+        <Dialog open={!!selectedOrder} onOpenChange={(isOpen) => !isOpen && setSelectedOrder(null)}>
+            <DialogContent className="max-w-3xl">
+                {selectedOrder && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Resumen del Pedido: {selectedOrder.projectName}</DialogTitle>
+                            <DialogDescription>
+                                Realizado por {selectedOrder.requesterName} el {format(selectedOrder.createdAt.toDate(), 'dd/MM/yyyy', { locale: es })}.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-[60vh] overflow-y-auto p-4">
+                            <div className="text-sm space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
+                                        <p>{selectedOrder.requesterName}</p>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
+                                        <p>{selectedOrder.projectName}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
+                                    <p>{selectedOrder.street} {selectedOrder.number}, {selectedOrder.municipality}, {selectedOrder.state}, C.P. {selectedOrder.postalCode}</p>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
+                                    <p>{selectedOrder.phone}</p>
+                                </div>
+                            </div>
+
+                            <Separator className="my-4 bg-gray-300" />
+                            
+                            <h3 className="font-bold uppercase text-center mb-2">Detalles del Pedido</h3>
+                            <Table>
+                                <TableHeader>
+                                <TableRow>
+                                    <TableHead>Descripción</TableHead>
+                                    <TableHead className="text-center">Cantidad</TableHead>
+                                    <TableHead className="text-right">P. Unitario</TableHead>
+                                    <TableHead className="text-right">Importe</TableHead>
+                                </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                {selectedOrder.materials.map((material: any, index: number) => {
+                                    const materialInfo = materialsList.find(m => m.name === material.name);
+                                    const unitPrice = materialInfo?.price || 0;
+                                    const subtotal = material.quantity * unitPrice;
+                                    return (
+                                    <TableRow key={index}>
+                                        <TableCell className="capitalize">{material.name}</TableCell>
+                                        <TableCell className="text-center">{material.quantity} {materialInfo?.unit}(s)</TableCell>
+                                        <TableCell className="text-right">${unitPrice.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">${subtotal.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                    )
+                                })}
+                                </TableBody>
+                                <TableFooter>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-right font-bold text-lg">Total del Pedido:</TableCell>
+                                    <TableCell className="text-right font-bold text-lg">${selectedOrder.total.toFixed(2)} MXN</TableCell>
+                                </TableRow>
+                                </TableFooter>
+                            </Table>
+                            
+                            <Separator className="my-4 bg-gray-300" />
+                            
+                            <div className="flex flex-col items-center">
+                                <h3 className="font-bold uppercase mb-2">Periodo de Entrega Programado</h3>
+                                <p>
+                                    Del {format(selectedOrder.deliveryDates.from.toDate(), 'PPP', { locale: es })} al {format(selectedOrder.deliveryDates.to.toDate(), 'PPP', { locale: es })}
+                                </p>
+                            </div>
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button onClick={generatePdf} disabled={isGeneratingPdf}>
+                                {isGeneratingPdf ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Generando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        Descargar PDF
+                                    </>
+                                )}
+                            </Button>
+                            <DialogClose asChild>
+                                <Button variant="outline">Cerrar</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </>
+                )}
+            </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
