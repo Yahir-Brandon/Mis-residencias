@@ -118,8 +118,7 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "phone"
+      "password"
     ]
   },
   "firestore": {

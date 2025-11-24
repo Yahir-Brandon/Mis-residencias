@@ -13,14 +13,6 @@ export const loginSchema = z.object({
   password: z.string().min(1, { message: "La contraseña es requerida." }),
 });
 
-export const phoneAuthSchema = z.object({
-    phone: z.string().min(10, "El número de teléfono debe tener 10 dígitos.").max(10, "El número de teléfono debe tener 10 dígitos.").regex(/^\d+$/, "Solo se permiten números."),
-});
-
-export const verifyCodeSchema = z.object({
-    code: z.string().length(6, "El código debe tener 6 dígitos."),
-});
-
 export const forgotPasswordSchema = z.object({
     email: z.string().email({ message: "Por favor, introduce un correo electrónico válido." }),
 });
