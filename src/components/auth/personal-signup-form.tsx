@@ -3,8 +3,16 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Link from 'next/link';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -19,6 +27,9 @@ import { Input } from '@/components/ui/input';
 import { personalSignupSchema } from '@/lib/auth-validation';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { TermsContent } from '@/components/legal/terms-content';
+import { PrivacyContent } from '@/components/legal/privacy-content';
 
 export function PersonalSignupForm() {
   const { toast } = useToast();
@@ -131,13 +142,49 @@ export function PersonalSignupForm() {
                 </FormLabel>
                 <FormDescription>
                   Al registrarte, aceptas nuestros{' '}
-                  <Link href="/terms" className="underline hover:text-primary">
-                    Términos de Servicio
-                  </Link>{' '}
-                  y{' '}
-                  <Link href="/privacy" className="underline hover:text-primary">
-                    Política de Privacidad
-                  </Link>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="link" className="p-0 h-auto text-sm">Términos de Servicio</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Términos y Condiciones</DialogTitle>
+                        <DialogDescription>
+                           Por favor, lee nuestros términos de servicio antes de continuar.
+                        </DialogDescription>
+                      </DialogHeader>
+                       <ScrollArea className="h-96 pr-6">
+                         <TermsContent />
+                       </ScrollArea>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button>Cerrar</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  {' '}y{' '}
+                   <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="link" className="p-0 h-auto text-sm">Política de Privacidad</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl">
+                      <DialogHeader>
+                        <DialogTitle>Política de Privacidad</DialogTitle>
+                        <DialogDescription>
+                           Por favor, lee nuestra política de privacidad antes de continuar.
+                        </DialogDescription>
+                      </DialogHeader>
+                       <ScrollArea className="h-96 pr-6">
+                          <PrivacyContent />
+                       </ScrollArea>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button>Cerrar</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   .
                 </FormDescription>
                 <FormMessage />
