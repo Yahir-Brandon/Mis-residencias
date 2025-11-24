@@ -1,6 +1,7 @@
+
 import { Button } from '@/components/ui/button';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ShieldCheck, Users, Truck } from 'lucide-react';
+import { ShieldCheck, Users, Truck, BrainCircuit } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -21,6 +22,11 @@ const whyChooseUs = [
     icon: <Truck className="h-12 w-12 text-primary" />,
     title: 'Logística Eficiente',
     description: 'Entregamos tus materiales a tiempo y en perfectas condiciones, directamente en tu obra, para que no tengas que preocuparte por nada.',
+  },
+  {
+    icon: <BrainCircuit className="h-12 w-12 text-primary" />,
+    title: 'Análisis Inteligente',
+    description: 'Nuestra IA analiza la urgencia de tu pedido basándose en las fechas de entrega para optimizar la logística y asegurar que tus materiales lleguen justo cuando los necesitas.',
   },
 ];
 
@@ -62,7 +68,7 @@ export default function Home() {
           <h2 className="text-3xl md:text-4xl font-headline font-bold text-center mb-12 animate-fade-in animation-delay-200">
             ¿Por Qué Elegirnos?
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 text-center">
             {whyChooseUs.map((reason, index) => (
               <div
                 key={reason.title}
