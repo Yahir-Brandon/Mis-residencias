@@ -6,8 +6,24 @@ import { testUser } from "@/lib/placeholder-data";
 import Link from "next/link";
 import { User, Mail, Phone, LogOut, PackagePlus, ShoppingCart, Activity } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function ProfilePage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const authStatus = localStorage.getItem('isAuthenticated');
+    if (authStatus !== 'true') {
+      router.push('/login');
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    router.push('/');
+  };
+
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -37,11 +53,9 @@ export default function ProfilePage() {
                   <span className="font-medium text-foreground">+52 55 1234 5678 (ficticio)</span>
                 </div>
               </div>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar Sesión
-                </Link>
+              <Button onClick={handleLogout} variant="outline" className="w-full">
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar Sesión
               </Button>
             </CardContent>
           </Card>

@@ -33,6 +33,7 @@ export function LoginForm() {
   function onSubmit(values: z.infer<typeof loginSchema>) {
     // For local testing, check against the test user
     if (values.email === testUser.email && values.password === testUser.password) {
+      localStorage.setItem('isAuthenticated', 'true');
       toast({
         title: 'Inicio de Sesión Exitoso',
         description: '¡Bienvenido de vuelta!',
@@ -40,6 +41,7 @@ export function LoginForm() {
       console.log('Login successful:', values);
       router.push('/profile');
     } else {
+      localStorage.removeItem('isAuthenticated');
       toast({
         variant: 'destructive',
         title: 'Inicio de Sesión Fallido',
