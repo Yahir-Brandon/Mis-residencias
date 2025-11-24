@@ -50,10 +50,10 @@ function OrderSummaryContent() {
   const summaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isOrderLoading && !orderData && orderId) {
+    if (error) {
         router.push('/new-order');
     }
-  }, [orderData, isOrderLoading, orderId, router, error]);
+  }, [error, router]);
 
   const generatePdf = async () => {
     if (!orderData) return;
@@ -241,23 +241,13 @@ function OrderSummaryContent() {
     }
   };
 
-  if (isOrderLoading) {
+  if (isOrderLoading || !orderData) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
-
-  if (!orderData) {
-    // This can happen briefly before the redirect.
-    return (
-       <div className="flex items-center justify-center min-h-[calc(100vh-14rem)]">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
-
 
   const {
     requesterName,
@@ -406,5 +396,3 @@ export default function OrderSummaryPage() {
         </Suspense>
     )
 }
-
-    
