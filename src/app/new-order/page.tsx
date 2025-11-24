@@ -22,14 +22,27 @@ const orderSchema = z.object({
   state: z.string().min(1, { message: "Debes seleccionar un estado." }),
   municipality: z.string().min(1, { message: "Debes seleccionar un municipio/delegación." }),
   material: z.string().min(1, { message: "Debes seleccionar un material." }),
+  quantity: z.coerce.number().min(1, { message: "La cantidad debe ser al menos 1." }),
 });
 
-const materials = ["cemento", "mortero", "cal", "alambre"];
+type Material = {
+  name: string;
+  price: number;
+  unit: string;
+};
+
+const materials: Material[] = [
+  { name: "cemento", price: 250, unit: "bulto" },
+  { name: "mortero", price: 220, unit: "bulto" },
+  { name: "cal", price: 80, unit: "bulto" },
+  { name: "alambre", price: 15, unit: "kg" },
+];
 
 export default function NewOrderPage() {
   const { toast } = useToast();
   const [selectedState, setSelectedState] = useState<State | null>(null);
-  
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
@@ -41,8 +54,13 @@ export default function NewOrderPage() {
       state: '',
       municipality: '',
       material: '',
+      quantity: 1,
     },
   });
+
+  const quantity = form.watch('quantity');
+  const total = selectedMaterial ? quantity * selectedMaterial.price : 0;
+
 
   const handleStateChange = (stateName: string) => {
     const stateData = mexicoStates.find(s => s.nombre === stateName) || null;
@@ -50,14 +68,21 @@ export default function NewOrderPage() {
     form.setValue('municipality', ''); // Reset municipality on state change
   };
 
+  const handleMaterialChange = (materialName: string) => {
+    const materialData = materials.find(m => m.name === materialName) || null;
+    setSelectedMaterial(materialData);
+    form.setValue('material', materialName);
+  };
+
   function onSubmit(values: z.infer<typeof orderSchema>) {
-    console.log(values);
+    console.log({...values, total});
     toast({
       title: "Pedido Enviado",
       description: "Hemos recibido tu pedido correctamente.",
     });
     form.reset();
     setSelectedState(null);
+    setSelectedMaterial(null);
   }
 
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
@@ -225,31 +250,76 @@ export default function NewOrderPage() {
               
               <h3 className="text-lg font-semibold border-b pb-2 pt-4">Pedido de Material</h3>
 
-              <FormField
-                control={form.control}
-                name="material"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Material</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un material" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {materials.map(material => (
-                          <SelectItem key={material} value={material} className="capitalize">{material}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                <FormField
+                  control={form.control}
+                  name="material"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-1">
+                      <FormLabel>Material</FormLabel>
+                      <Select onValueChange={(value) => handleMaterialChange(value)} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona un material" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {materials.map(material => (
+                            <SelectItem key={material.name} value={material.name} className="capitalize">{material.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {selectedMaterial && (
+                  <>
+                    <div className="space-y-2">
+                        <Label>Precio Unitario</Label>
+                        <Input 
+                          readOnly 
+                          value={`$${selectedMaterial.price.toFixed(2)} / ${selectedMaterial.unit}`} 
+                          className="bg-muted"
+                        />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cantidad</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              inputMode="numeric" 
+                              min="1" 
+                              {...field}
+                              onChange={(e) => {
+                                const numericValue = e.target.value.replace(/\D/g, '');
+                                field.onChange(parseInt(numericValue, 10) || 1);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="space-y-2">
+                        <Label>Total</Label>
+                        <Input 
+                          readOnly 
+                          value={`$${total.toFixed(2)}`} 
+                          className="bg-muted font-bold text-lg"
+                        />
+                    </div>
+                  </>
                 )}
-              />
+              </div>
 
               <div className="flex justify-end pt-4">
-                  <Button size="lg" type="submit">
+                  <Button size="lg" type="submit" disabled={!form.formState.isValid}>
                       Enviar Pedido
                   </Button>
               </div>
@@ -260,3 +330,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
