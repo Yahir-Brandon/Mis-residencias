@@ -25,7 +25,6 @@ export default function UserOrderList() {
   const { user } = useUser();
   const router = useRouter();
 
-  // The query is only enabled when the user is available.
   const userOrdersQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(
