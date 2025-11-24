@@ -452,7 +452,24 @@ export default function NewOrderPage() {
                               day_range_end: "!bg-green-500 !text-white",
                             }}
                           />
-                          <DialogFooter>
+                          <div className="w-full mt-4 p-4 border-t">
+                            <h4 className="text-sm font-semibold mb-2">Simbología</h4>
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-md bg-red-500"></div>
+                                <span>Fecha Próxima (Inicio)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-md bg-green-500"></div>
+                                <span>Fecha Límite (Fin)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-md bg-primary/90"></div>
+                                <span>Día de Hoy</span>
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter className="pt-4">
                             <DialogClose asChild>
                               <Button onClick={() => setIsCalendarOpen(false)}>Confirmar</Button>
                             </DialogClose>
