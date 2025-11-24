@@ -5,15 +5,31 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
-import { format } from 'date-fns';
+import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import 'jspdf-autotable';
 import { Loader2, FileDown, Home } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
+
+
+// Augment jsPDF with the autoTable method
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
+
+const materialsList = [
+  { name: "cemento", price: 250, unit: "bulto" },
+  { name: "mortero", price: 220, unit: "bulto" },
+  { name: "cal", price: 80, unit: "bulto" },
+  { name: "alambre", price: 15, unit: "kg" },
+];
+
 
 function OrderSummaryContent() {
   const searchParams = useSearchParams();
@@ -38,28 +54,157 @@ function OrderSummaryContent() {
   }, [searchParams, router]);
 
   const generatePdf = async () => {
-    if (!summaryRef.current) return;
+    if (!orderData) return;
     setIsGeneratingPdf(true);
 
     try {
-      const canvas = await html2canvas(summaryRef.current, { 
-        scale: 2,
-        backgroundColor: null, // Use a transparent background
+      const doc = new jsPDF();
+      const deliveryStart = new Date(orderData.deliveryDates.from);
+      const deliveryEnd = new Date(orderData.deliveryDates.to);
+
+      // Header
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
+
+      // Order Info
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      const details = [
+        { title: 'Solicitante:', content: orderData.requesterName },
+        { title: 'Obra:', content: orderData.projectName },
+        { title: 'Dirección:', content: `${orderData.street} ${orderData.number}, ${orderData.municipality}, ${orderData.state}, C.P. ${orderData.postalCode}` },
+        { title: 'Teléfono:', content: orderData.phone },
+      ];
+
+      doc.autoTable({
+        startY: 30,
+        body: details,
+        theme: 'plain',
+        styles: {
+          cellPadding: { top: 1, right: 2, bottom: 1, left: 0 },
+          fontSize: 10,
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 40 },
+          1: { cellWidth: 'auto' },
+        },
       });
-      const imgData = canvas.toDataURL('image/png');
       
-      // Calculate PDF dimensions to match canvas aspect ratio
-      const pdfWidth = 210; // A4 width in mm
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const lastY = (doc as any).lastAutoTable.finalY || 60;
       
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: [pdfWidth, pdfHeight]
+      // Materials Table
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Detalles del Pedido', 14, lastY + 10);
+
+      const materialInfo = materialsList.find(m => m.name === orderData.material);
+      const unitPrice = materialInfo?.price || 0;
+      const subtotal = orderData.quantity * unitPrice;
+      
+      const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
+      const tableRows = [[
+        orderData.material,
+        `${orderData.quantity} ${orderData.unit}(s)`,
+        `$${unitPrice.toFixed(2)}`,
+        `$${subtotal.toFixed(2)}`
+      ]];
+
+      doc.autoTable({
+        startY: lastY + 15,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        styles: { fontSize: 10 },
+        didDrawPage: (data) => {
+          // Footer
+          const pageCount = doc.internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        }
+      });
+      
+      let finalTableY = (doc as any).lastAutoTable.finalY;
+
+      // Total
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
+      doc.text(`$${orderData.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
+
+      // Calendar
+      doc.setFontSize(12);
+      doc.text('Periodo de Entrega Programado', 14, finalTableY + 25);
+      
+      const month = getMonth(deliveryStart);
+      const year = getYear(deliveryStart);
+      const firstDayOfMonth = startOfMonth(deliveryStart);
+      const startDayOfWeek = (getDay(firstDayOfMonth) + 6) % 7;
+      const daysInMonth = getDaysInMonth(deliveryStart);
+      const monthName = format(deliveryStart, 'MMMM yyyy', { locale: es });
+
+      doc.setFontSize(10);
+      doc.text(monthName.charAt(0).toUpperCase() + monthName.slice(1), 105, finalTableY + 35, { align: 'center' });
+
+      const cellWidth = 12;
+      const cellHeight = 8;
+      const startX = 14;
+      const calendarY = finalTableY + 40;
+      const dayHeaders = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      dayHeaders.forEach((header, index) => {
+          doc.text(header, startX + index * cellWidth + cellWidth / 2, calendarY, { align: 'center' });
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`pedido-${orderData.projectName || 'resumen'}.pdf`);
+      let currentDay = 1;
+      doc.setFont('helvetica', 'normal');
+      doc.setLineWidth(0.2);
+
+      for (let week = 0; week < 6; week++) {
+          for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+              if ((week === 0 && dayOfWeek < startDayOfWeek) || currentDay > daysInMonth) {
+                  continue;
+              }
+
+              const x = startX + dayOfWeek * cellWidth;
+              const y = calendarY + (week + 1) * cellHeight;
+
+              const currentDate = new Date(year, month, currentDay);
+              const isStartDate = getDate(currentDate) === getDate(deliveryStart);
+              const isEndDate = getDate(currentDate) === getDate(deliveryEnd);
+              const isInRange = currentDate > deliveryStart && currentDate < deliveryEnd;
+
+              let originalTextColor = doc.getTextColor();
+              
+              if (isStartDate) {
+                  doc.setFillColor(220, 53, 69); // Red
+                  doc.setTextColor(255, 255, 255);
+                  doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
+              } else if (isEndDate) {
+                  doc.setFillColor(25, 135, 84); // Green
+                  doc.setTextColor(255, 255, 255);
+                  doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
+              } else if (isInRange) {
+                  doc.setFillColor(233, 236, 239); // Light gray
+                  doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
+              }
+              
+              doc.text(String(currentDay), x + cellWidth / 2, y, { align: 'center' });
+              
+              doc.setTextColor(originalTextColor);
+
+              currentDay++;
+          }
+          if (currentDay > daysInMonth) break;
+      }
+      
+      doc.save(`pedido-${orderData.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
+
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
@@ -94,13 +239,6 @@ function OrderSummaryContent() {
   const deliveryStart = new Date(deliveryDates.from);
   const deliveryEnd = new Date(deliveryDates.to);
 
-  // Find the price for the material to calculate subtotal
-  const materialsList = [
-    { name: "cemento", price: 250, unit: "bulto" },
-    { name: "mortero", price: 220, unit: "bulto" },
-    { name: "cal", price: 80, unit: "bulto" },
-    { name: "alambre", price: 15, unit: "kg" },
-  ];
   const materialInfo = materialsList.find(m => m.name === material);
   const unitPrice = materialInfo?.price || 0;
   const subtotal = quantity * unitPrice;
@@ -108,7 +246,7 @@ function OrderSummaryContent() {
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
-      <Card className="max-w-2xl mx-auto shadow-lg">
+      <Card className="max-w-4xl mx-auto shadow-lg">
           <CardHeader>
               <CardTitle className="text-3xl font-bold font-headline text-center">¡Pedido en Proceso!</CardTitle>
               <CardDescription className="text-center">
@@ -116,30 +254,30 @@ function OrderSummaryContent() {
               </CardDescription>
           </CardHeader>
 
-          {/* PDF Content Start */}
-          <div ref={summaryRef} className="p-8 bg-white text-black">
+          {/* This content is now for display only, the PDF is generated programmatically */}
+          <div ref={summaryRef} className="p-6 sm:p-8 bg-white text-black rounded-lg">
               <div className="flex justify-center items-center mb-4">
                   <Logo />
               </div>
               <Separator className="my-4 bg-gray-300" />
               
-              <div className="text-sm space-y-2">
-                  <div className="grid grid-cols-2 gap-4">
+              <div className="text-sm space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                          <h3 className="font-bold uppercase">Solicitante:</h3>
+                          <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
                           <p>{requesterName}</p>
                       </div>
                       <div>
-                          <h3 className="font-bold uppercase">Obra:</h3>
+                          <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
                           <p>{projectName}</p>
                       </div>
                   </div>
                   <div>
-                      <h3 className="font-bold uppercase">Dirección de Entrega:</h3>
+                      <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
                       <p>{street} {number}, {municipality}, {state}, C.P. {postalCode}</p>
                   </div>
                   <div>
-                      <h3 className="font-bold uppercase">Teléfono:</h3>
+                      <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
                       <p>{phone}</p>
                   </div>
               </div>
@@ -196,9 +334,8 @@ function OrderSummaryContent() {
                    />
               </div>
           </div>
-          {/* PDF Content End */}
 
-          <CardFooter className="flex flex-col sm:flex-row justify-center gap-4 pt-6 bg-slate-50 rounded-b-lg">
+          <CardFooter className="flex flex-col sm:flex-row justify-center gap-4 pt-6 bg-slate-50 rounded-b-lg border-t">
               <Button onClick={generatePdf} disabled={isGeneratingPdf}>
                   {isGeneratingPdf ? (
                       <>
