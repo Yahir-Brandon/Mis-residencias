@@ -22,17 +22,17 @@ const statusStyles: {[key in OrderStatus]: string} = {
 
 export default function UserOrderList() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   const userOrdersQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (isUserLoading || !user) return null;
     return query(
       collection(firestore, 'orders'),
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
-  }, [firestore, user]);
+  }, [firestore, user, isUserLoading]);
 
   const { data: orders, isLoading, error } = useCollection(userOrdersQuery);
 
