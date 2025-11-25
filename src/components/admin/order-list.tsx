@@ -25,6 +25,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
   Dialog,
@@ -397,7 +398,6 @@ export default function OrderList() {
             </TableBody>
             </Table>
 
-            {/* Dialog Content outside of the Table */}
             <DialogContent className="max-w-3xl">
                 {selectedOrder && (
                     <>
