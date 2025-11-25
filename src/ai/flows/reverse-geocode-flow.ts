@@ -40,7 +40,7 @@ const reverseGeocodeTool = ai.defineTool(
       throw new Error('La clave de API de Google Maps no está configurada en las variables de entorno.');
     }
 
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&result_type=route&key=${apiKey}`;
 
     const response = await fetch(url);
     const data = await response.json();
