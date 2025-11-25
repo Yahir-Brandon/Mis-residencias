@@ -1,6 +1,6 @@
 'use client';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, orderBy, query, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, doc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown } from 'lucide-react';
@@ -25,7 +25,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import {
   Dialog,
@@ -40,14 +39,11 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Separator } from '../ui/separator';
-import { Logo } from '../logo';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-// Aumenta jsPDF con el método autoTable
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
@@ -81,12 +77,48 @@ const statusStyles: {[key in OrderStatus]: string} = {
 export default function OrderList() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const router = useRouter();
-  // Esta consulta ahora solo es para la lista de administradores, que puede consultar la raíz
-  const ordersCollectionRef = useMemoFirebase(() => query(collection(firestore, 'orders'), orderBy('createdAt', 'desc')), [firestore]);
-  const { data: orders, isLoading, error } = useCollection(ordersCollectionRef);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const fetchAllOrders = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const usersSnapshot = await getDocs(collection(firestore, 'users'));
+        const allOrders: any[] = [];
+        
+        for (const userDoc of usersSnapshot.docs) {
+          const ordersCollectionRef = collection(firestore, 'users', userDoc.id, 'orders');
+          const ordersSnapshot = await getDocs(ordersCollectionRef);
+          ordersSnapshot.forEach(orderDoc => {
+            allOrders.push({ id: orderDoc.id, ...orderDoc.data() });
+          });
+        }
+        
+        allOrders.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+        setOrders(allOrders);
+
+      } catch (e: any) {
+        console.error("Error fetching all orders:", e);
+        setError(e);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: '/users/{userId}/orders',
+            operation: 'list',
+        }));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAllOrders();
+  }, [firestore]);
+
 
   const handleStatusChange = async (userId: string, orderId: string, newStatus: OrderStatus) => {
     const orderDocRef = doc(firestore, 'users', userId, 'orders', orderId);
@@ -100,6 +132,8 @@ export default function OrderList() {
             }));
             throw error;
         });
+
+        setOrders(prevOrders => prevOrders.map(o => o.id === orderId ? {...o, status: newStatus} : o));
 
         toast({
             title: "Estado del Pedido Actualizado",
@@ -116,6 +150,7 @@ export default function OrderList() {
   }
 
   const handleDeleteOrder = async (userId: string, orderId: string) => {
+    setIsDeleting(true);
     const orderDocRef = doc(firestore, 'users', userId, 'orders', orderId);
     try {
         await deleteDoc(orderDocRef)
@@ -126,6 +161,8 @@ export default function OrderList() {
             }));
             throw error;
         });
+        
+        setOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
 
         toast({
             title: "Pedido Eliminado",
@@ -138,6 +175,8 @@ export default function OrderList() {
             title: "Error",
             description: "No se pudo eliminar el pedido.",
         });
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -154,12 +193,10 @@ export default function OrderList() {
       const deliveryStart = new Date(selectedOrder.deliveryDates.from.seconds * 1000);
       const deliveryEnd = new Date(selectedOrder.deliveryDates.to.seconds * 1000);
 
-      // Encabezado
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(18);
       doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
 
-      // Información del Pedido
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       
@@ -174,19 +211,12 @@ export default function OrderList() {
         startY: 30,
         body: details,
         theme: 'plain',
-        styles: {
-          cellPadding: { top: 1, right: 2, bottom: 1, left: 0 },
-          fontSize: 10,
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 40 },
-          1: { cellWidth: 'auto' },
-        },
+        styles: { cellPadding: { top: 1, right: 2, bottom: 1, left: 0 }, fontSize: 10 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 'auto' } },
       });
       
       const lastY = (doc as any).lastAutoTable.finalY || 60;
       
-      // Tabla de Materiales
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Detalles del Pedido', 14, lastY + 10);
@@ -212,7 +242,6 @@ export default function OrderList() {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         styles: { fontSize: 10 },
         didDrawPage: (data) => {
-          // Pie de página
           const pageCount = doc.internal.getNumberOfPages();
           doc.setFontSize(8);
           doc.setTextColor(150);
@@ -222,7 +251,6 @@ export default function OrderList() {
       
       let finalTableY = (doc as any).lastAutoTable.finalY;
 
-      // Total
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
@@ -245,7 +273,7 @@ export default function OrderList() {
           <ShoppingCart className="h-5 w-5" />
           <span>Pedidos de Clientes</span>
         </CardTitle>
-        <CardDescription>Lista de todos los pedidos realizados.</CardDescription>
+        <CardDescription>Lista de todos los pedidos realizados en la plataforma.</CardDescription>
       </CardHeader>
       <CardContent>
         <Dialog>
@@ -347,8 +375,8 @@ export default function OrderList() {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteOrder(order.userId, order.id)} className="bg-destructive hover:bg-destructive/90">
-                                        Sí, borrar pedido
+                                    <AlertDialogAction onClick={() => handleDeleteOrder(order.userId, order.id)} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Sí, borrar pedido'}
                                     </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -368,6 +396,8 @@ export default function OrderList() {
                 )}
             </TableBody>
             </Table>
+
+            {/* Dialog Content outside of the Table */}
             <DialogContent className="max-w-3xl">
                 {selectedOrder && (
                     <>
