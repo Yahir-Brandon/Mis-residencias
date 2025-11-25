@@ -33,12 +33,17 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
   const [isGeocoding, setIsGeocoding] = useState(false);
 
   useEffect(() => {
+    // Si se proporcionan coordenadas iniciales, darles prioridad.
     if (initialCoordinates) {
         setCoordinates(initialCoordinates);
         return;
     }
 
-    if (!address) return;
+    // Si no hay coordenadas iniciales pero sí una dirección, geocodificar.
+    if (!address) {
+        setCoordinates(null); // Limpiar si no hay ni dirección ni coordenadas
+        return;
+    }
 
     const getCoordinates = async () => {
       setIsGeocoding(true);
@@ -61,16 +66,14 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
 
   }, [address, initialCoordinates, onLocationChange]);
 
-  const handleMapClick = (e: google.maps.MapMouseEvent) => {
-    if (isDraggable && e.latLng) {
+  const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
+    if (isDraggable && e.latLng && onLocationChange) {
       const newCoords = {
         lat: e.latLng.lat(),
         lng: e.latLng.lng()
       };
       setCoordinates(newCoords);
-      if (onLocationChange) {
-        onLocationChange(newCoords);
-      }
+      onLocationChange(newCoords);
     }
   }
 
@@ -110,12 +113,18 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
       mapContainerStyle={mapContainerStyle}
       center={mapCenter}
       zoom={coordinates ? 16 : 10}
-      onClick={handleMapClick}
       options={{
-          draggableCursor: isDraggable ? 'pointer' : 'grab',
+          draggableCursor: isDraggable ? 'crosshair' : 'grab',
+          clickableIcons: false
       }}
     >
-      {coordinates && <Marker position={coordinates} />}
+      {coordinates && (
+        <Marker 
+          position={coordinates} 
+          draggable={isDraggable}
+          onDragEnd={handleMarkerDragEnd}
+        />
+      )}
     </GoogleMap>
   );
 }

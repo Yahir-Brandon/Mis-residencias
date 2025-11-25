@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
 import { useState, useEffect } from "react";
-import { CalendarIcon, Plus, BrainCircuit, Trash2, Loader2 } from "lucide-react";
+import { CalendarIcon, Plus, BrainCircuit, Trash2, Loader2, LocateFixed, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -25,6 +25,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { useToast } from "@/hooks/use-toast";
 import { geocodeAddress } from "@/app/actions/geocode-actions";
+import { DeliveryMap } from "@/components/maps/delivery-map";
 
 
 const materialOrderSchema = z.object({
@@ -47,11 +48,9 @@ const orderSchema = z.object({
     from: z.date({ required_error: "La fecha de inicio es requerida."}),
     to: z.date({ required_error: "La fecha de fin es requerida."}),
   }),
-  location: z.object({
-    lat: z.number(),
-    lng: z.number(),
-  }).optional(),
 });
+
+type OrderFormData = z.infer<typeof orderSchema>;
 
 type Material = {
   name: string;
@@ -77,7 +76,14 @@ export default function NewOrderPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof orderSchema>>({
+  // Estados para el modal de confirmación de ubicación
+  const [isConfirmingLocation, setIsConfirmingLocation] = useState(false);
+  const [geocodedLocation, setGeocodedLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [lastSubmittedData, setLastSubmittedData] = useState<OrderFormData | null>(null);
+  const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
+
+  const form = useForm<OrderFormData>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
       requesterName: '',
@@ -151,14 +157,16 @@ export default function NewOrderPage() {
     form.setValue('municipality', ''); // Reset municipality on state change
   };
 
-  async function onSubmit(values: z.infer<typeof orderSchema>) {
+  async function handleInitialSubmit(values: OrderFormData) {
     if (!user || !firestore || !deliveryAnalysis) return;
     setIsSubmitting(true);
-    
-    let location;
+    setLastSubmittedData(values); // Guardar los datos del formulario
+
     try {
       const fullAddress = `${values.street} ${values.number}, ${values.colony}, ${values.municipality}, ${values.state}, C.P. ${values.postalCode}`;
-      location = await geocodeAddress({ address: fullAddress });
+      const location = await geocodeAddress({ address: fullAddress });
+      setGeocodedLocation(location);
+      setIsConfirmingLocation(true); // Abrir el modal de confirmación
     } catch(err) {
         console.error("Geocoding failed:", err);
         toast({
@@ -166,13 +174,18 @@ export default function NewOrderPage() {
             title: "Error de Dirección",
             description: "No se pudo encontrar la dirección proporcionada. Por favor, verifica los datos.",
         });
-        setIsSubmitting(false);
-        return;
+    } finally {
+      setIsSubmitting(false);
     }
+  }
 
+  const handleLocationConfirmation = async (confirmedLocation: {lat: number, lng: number}) => {
+    if (!user || !firestore || !deliveryAnalysis || !lastSubmittedData) return;
+    setIsSubmitting(true);
+    
     const orderData = { 
-      ...values, 
-      location,
+      ...lastSubmittedData, 
+      location: confirmedLocation,
       total,
       userId: user.uid,
       priority: deliveryAnalysis,
@@ -207,8 +220,38 @@ export default function NewOrderPage() {
       })
       .finally(() => {
         setIsSubmitting(false);
+        setIsConfirmingLocation(false);
       });
   }
+
+  const handleUseCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const newCoords = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                setGeocodedLocation(newCoords); // Actualiza la ubicación en el mapa
+            },
+            (error) => {
+                console.error("Error getting current location:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error de Ubicación",
+                    description: "No se pudo obtener tu ubicación actual. Asegúrate de haber concedido los permisos.",
+                });
+            }
+        );
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Navegador no compatible",
+            description: "Tu navegador no soporta la geolocalización.",
+        });
+    }
+  };
+
 
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
 
@@ -221,7 +264,7 @@ export default function NewOrderPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(handleInitialSubmit)} className="space-y-6">
               <h3 className="text-lg font-semibold border-b pb-2">Información de Contacto</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
@@ -612,7 +655,7 @@ export default function NewOrderPage() {
                       {isSubmitting ? (
                           <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Enviando...
+                              Verificando...
                           </>
                       ) : (
                         'Enviar Pedido'
@@ -623,6 +666,44 @@ export default function NewOrderPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <Dialog open={isConfirmingLocation} onOpenChange={setIsConfirmingLocation}>
+          <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                  <DialogTitle>Confirmar Ubicación de Entrega</DialogTitle>
+                  <DialogDescription>
+                      Por favor, verifica que el marcador esté en el lugar correcto. Puedes arrastrarlo para ajustar la posición.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="h-[400px] w-full rounded-lg overflow-hidden border my-4">
+                  <DeliveryMap
+                      apiKey={mapsApiKey}
+                      initialCoordinates={geocodedLocation!}
+                      isDraggable={true}
+                      onLocationChange={(newCoords) => setGeocodedLocation(newCoords)}
+                  />
+              </div>
+              <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Button 
+                    variant="outline"
+                    onClick={handleUseCurrentLocation}
+                    className="col-span-1"
+                >
+                    <LocateFixed className="mr-2 h-4 w-4"/>
+                    Usar mi Ubicación
+                </Button>
+                <Button 
+                  onClick={() => handleLocationConfirmation(geocodedLocation!)} 
+                  disabled={isSubmitting || !geocodedLocation}
+                  className="sm:col-span-2"
+                >
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MapPin className="mr-2 h-4 w-4" />}
+                    Sí, la ubicación es correcta
+                </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
