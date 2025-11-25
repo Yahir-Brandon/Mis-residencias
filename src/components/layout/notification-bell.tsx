@@ -12,6 +12,7 @@ import { collection, query, orderBy, writeBatch, doc } from 'firebase/firestore'
 import { useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 export function NotificationBell() {
   const { user } = useUser();
@@ -31,10 +32,12 @@ export function NotificationBell() {
   });
 
   const unreadNotifications = notifications?.filter((n) => !n.read);
+  const hasUnread = unreadNotifications && unreadNotifications.length > 0;
+
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
-    if (open && unreadNotifications && unreadNotifications.length > 0) {
+    if (open && hasUnread) {
       markAllAsRead();
     }
   };
@@ -59,11 +62,11 @@ export function NotificationBell() {
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadNotifications && unreadNotifications.length > 0 && (
-            <span className="absolute top-1 right-1 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          <Bell className={cn("h-5 w-5", hasUnread && "animate-ring")} />
+          {hasUnread && (
+            <span className="absolute top-1 right-1 flex h-3 w-3">
+              <span className="animate-pulse-strong absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
             </span>
           )}
           <span className="sr-only">Abrir notificaciones</span>

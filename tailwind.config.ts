@@ -109,6 +109,8 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'slide-in-up': 'slide-in-up 0.5s ease-out forwards',
+        'ring': 'ring 1s ease-in-out',
+        'pulse-strong': 'pulse-strong 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
   },
