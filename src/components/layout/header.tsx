@@ -8,6 +8,7 @@ import { User, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { NotificationBell } from './notification-bell';
 
 export function Header() {
   const { user } = useUser();
@@ -27,6 +28,7 @@ export function Header() {
           <ThemeToggle />
           {user ? (
             <>
+              <NotificationBell />
               <Button variant="ghost" asChild>
                 <Link href="/profile" className='flex items-center gap-2'>
                   <User />

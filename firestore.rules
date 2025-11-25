@@ -7,11 +7,12 @@
  * Estructura de Datos:
  * - /users/{userId}: Datos comunes del usuario (ej. email, userType). El ID del documento es el UID de autenticación.
  * - /users/{userId}/orders/{orderId}: Almacena pedidos de clientes, anidados bajo el usuario.
+ * - /users/{userId}/notifications/{notificationId}: Almacena notificaciones para el usuario.
  * - /businesses/{userId}: Almacena datos específicos de empresas para usuarios de tipo empresa.
  * - /products/{productId}: Almacena listados de productos, que son públicos.
  *
  * Decisiones Clave de Seguridad:
- * - Propiedad Basada en la Ruta: Todos los datos específicos del usuario (incluidos los pedidos) se almacenan en documentos
+ * - Propiedad Basada en la Ruta: Todos los datos específicos del usuario (incluidos los pedidos y notificaciones) se almacenan en documentos
  *   o subcolecciones donde la ruta contiene el UID de autenticación del usuario.
  * - Acceso de Lectura para Administradores: Los usuarios con `userType == 'admin'` pueden leer todos los documentos
  *   en las colecciones `/users`, `/businesses` y todas las subcolecciones de `orders` pero no pueden escribir en ellos (excepto sus propios datos).
@@ -86,6 +87,21 @@ service cloud.firestore {
         allow create: if isOwner(userId) && request.resource.data.userId == userId;
         allow update: if isOwner(userId) || isAdmin(); // Usuario o admin puede cambiar el estado
         allow delete: if isAdmin(); // Solo los administradores pueden eliminar pedidos
+      }
+
+      // ----------------------------------------------------------------------
+      // Subcolección: notifications
+      // ----------------------------------------------------------------------
+
+      /**
+       * @description Controla el acceso a las notificaciones de los usuarios.
+       * @path /users/{userId}/notifications/{notificationId}
+       */
+      match /notifications/{notificationId} {
+        allow get, list: if isOwner(userId); // Los usuarios solo leen sus notificaciones
+        allow create: if isAdmin(); // Solo los administradores pueden crear notificaciones
+        allow update: if isOwner(userId); // El usuario puede marcarlas como leídas
+        allow delete: if isOwner(userId); // El usuario puede borrar sus notificaciones
       }
     }
 

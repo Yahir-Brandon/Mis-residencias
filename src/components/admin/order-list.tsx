@@ -1,6 +1,6 @@
 'use client';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, doc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, deleteDoc, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown } from 'lucide-react';
@@ -90,6 +90,10 @@ export default function OrderList() {
     const fetchAllOrders = async () => {
       setIsLoading(true);
       setError(null);
+      if (!firestore) {
+        setIsLoading(false);
+        return;
+      }
       try {
         const usersSnapshot = await getDocs(collection(firestore, 'users'));
         const allOrders: any[] = [];
@@ -121,8 +125,8 @@ export default function OrderList() {
   }, [firestore]);
 
 
-  const handleStatusChange = async (userId: string, orderId: string, newStatus: OrderStatus) => {
-    const orderDocRef = doc(firestore, 'users', userId, 'orders', orderId);
+  const handleStatusChange = async (order: any, newStatus: OrderStatus) => {
+    const orderDocRef = doc(firestore, 'users', order.userId, 'orders', order.id);
     try {
         await updateDoc(orderDocRef, { status: newStatus })
         .catch(error => {
@@ -134,7 +138,27 @@ export default function OrderList() {
             throw error;
         });
 
-        setOrders(prevOrders => prevOrders.map(o => o.id === orderId ? {...o, status: newStatus} : o));
+        // Create notification
+        const notificationRef = collection(firestore, 'users', order.userId, 'notifications');
+        const notificationMessage = `El estado de tu pedido para la obra "${order.projectName}" ha cambiado a: ${newStatus}.`;
+        
+        await addDoc(notificationRef, {
+          userId: order.userId,
+          orderId: order.id,
+          message: notificationMessage,
+          read: false,
+          createdAt: serverTimestamp(),
+        }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: notificationRef.path,
+                operation: 'create',
+                requestResourceData: { message: notificationMessage }
+            }));
+            // We don't re-throw here, as the status update was successful.
+            console.error("Failed to create notification:", error);
+        });
+
+        setOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status: newStatus} : o));
 
         toast({
             title: "Estado del Pedido Actualizado",
@@ -343,20 +367,20 @@ export default function OrderList() {
                             </DropdownMenuItem>
                             </DialogTrigger>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleStatusChange(order.userId, order.id, 'En proceso')}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order, 'En proceso')}>
                                 <Package className="mr-2 h-4 w-4" />
                                 Marcar como "En proceso"
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(order.userId, order.id, 'Enviado')}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order, 'Enviado')}>
                                 <Truck className="mr-2 h-4 w-4" />
                                 Marcar como "Enviado"
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(order.userId, order.id, 'Entregado')}>
+                            <DropdownMenuItem onClick={() => handleStatusChange(order, 'Entregado')}>
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Marcar como "Entregado"
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" onClick={() => handleStatusChange(order.userId, order.id, 'Cancelado')}>
+                            <DropdownMenuItem className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" onClick={() => handleStatusChange(order, 'Cancelado')}>
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Cancelar Pedido
                             </DropdownMenuItem>

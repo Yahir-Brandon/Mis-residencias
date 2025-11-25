@@ -192,6 +192,43 @@
       "required": [
         "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "status", "createdAt"
       ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the notification."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who receives the notification."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the notification message."
+        },
+        "orderId": {
+          "type": "string",
+          "description": "The ID of the related order."
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Indicates if the notification has been read.",
+          "default": false
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the notification was created."
+        }
+      },
+      "required": [
+        "id", "userId", "message", "orderId", "read", "createdAt"
+      ]
     }
   },
   "auth": {
@@ -266,8 +303,26 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": { "$ref": "#/backend/entities/Notification" },
+          "description": "Stores user-specific notifications. Users can read/update their own, admins can create them.",
+          "params": [
+             {
+              "name": "userId",
+              "description": "The UID of the user who owns this subcollection."
+            },
+            {
+              "name": "notificationId",
+              "description": "Unique identifier for the notification."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed for a secure, user-centric application. The primary `/users/{userId}` collection uses the Firebase Auth UID as the document ID, creating a direct and secure link between the authenticated user and their data. This path-based ownership is the cornerstone of the security rules. For business accounts, a separate `/businesses/{businessId}` collection is used, also keyed by the user's UID, to cleanly segregate business-specific data from personal user data, simplifying rules and queries. Products are in a separate, publicly readable collection to allow browsing for all users. Customer orders are now stored in a `/orders` subcollection under each user (`/users/{userId}/orders/{orderId}`). This robustly enforces that users can only access their own orders through path-based security, which is more reliable and secure than query-based rules. Administrators retain read access across all user orders for management."
+    "reasoning": "The Firestore structure is designed for a secure, user-centric application. The primary `/users/{userId}` collection uses the Firebase Auth UID as the document ID, creating a direct and secure link between the authenticated user and their data. This path-based ownership is the cornerstone of the security rules. For business accounts, a separate `/businesses/{businessId}` collection is used, also keyed by the user's UID, to cleanly segregate business-specific data from personal user data, simplifying rules and queries. Products are in a separate, publicly readable collection to allow browsing for all users. Customer orders are now stored in a `/orders` subcollection under each user (`/users/{userId}/orders/{orderId}`). This robustly enforces that users can only access their own orders through path-based security, which is more reliable and secure than query-based rules. Notifications are also stored in a subcollection under each user for the same security reasons. Administrators retain read access across all user orders for management."
   }
 }
