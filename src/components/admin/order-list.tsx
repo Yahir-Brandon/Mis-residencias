@@ -281,7 +281,14 @@ export default function OrderList() {
                         doc.setFont('helvetica', 'bold');
                         doc.text('Ubicación de Entrega', 14, lastY + 10);
                         doc.addImage(base64data as string, 'PNG', 14, lastY + 15, 180, 70);
-                        lastY += 85;
+                        
+                        doc.setFontSize(10);
+                        doc.setTextColor(0, 0, 255); // Color azul para el enlace
+                        doc.textWithLink('¿Cómo llegar?', 14, lastY + 90, {
+                            url: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+                        });
+
+                        lastY += 95; // Ajustar la posición para el siguiente elemento
                         resolve();
                     };
                 });
@@ -292,6 +299,7 @@ export default function OrderList() {
         
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0); // Restaurar color de texto a negro
         doc.text('Detalles del Pedido', 14, lastY + 10);
 
         const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
@@ -327,6 +335,7 @@ export default function OrderList() {
 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0,0,0);
         doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
         doc.text(`$${selectedOrder.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
 
@@ -457,7 +466,7 @@ export default function OrderList() {
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                        <AlertDialogTitle>¿Estás absolutely seguro?</AlertDialogTitle>
                                         <AlertDialogDescription>
                                             Esta acción no se puede deshacer. Esto eliminará permanentemente el pedido de la base de datos.
                                         </AlertDialogDescription>
