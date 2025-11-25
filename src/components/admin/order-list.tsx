@@ -498,7 +498,7 @@ export default function OrderList() {
                                       handleViewDetails(order);
                                       setIsSignatureModalOpen(true);
                                   }}
-                                  disabled={order.status === 'Cancelado' || order.status === 'Pendiente' || order.status === 'En proceso'}
+                                  disabled={order.status === 'Cancelado' || order.status === 'Pendiente' || order.status === 'En proceso' || !!order.deliveryConfirmation}
                                 >
                                       <Edit className="mr-2 h-4 w-4" />
                                       Confirmar Entrega
