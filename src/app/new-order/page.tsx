@@ -28,6 +28,7 @@ import { geocodeAddress } from "@/app/actions/geocode-actions";
 import { DeliveryMap } from "@/components/maps/delivery-map";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { reverseGeocode } from "../actions/reverse-geocode-actions";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 const materialOrderSchema = z.object({
@@ -84,6 +85,7 @@ export default function NewOrderPage() {
   const [isConfirmingLocation, setIsConfirmingLocation] = useState(false);
   const [geocodedLocation, setGeocodedLocation] = useState<{lat: number, lng: number} | null>(null);
   const [lastSubmittedData, setLastSubmittedData] = useState<OrderFormData | null>(null);
+  const [isLocationConfirmed, setIsLocationConfirmed] = useState(false);
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 
@@ -178,6 +180,7 @@ export default function NewOrderPage() {
       const fullAddress = `${values.street} ${values.number}, ${values.colony}, ${values.municipality}, ${values.state}, C.P. ${values.postalCode}`;
       const location = await geocodeAddress({ address: fullAddress });
       setGeocodedLocation(location);
+      setIsLocationConfirmed(false); // Reset confirmation on new submit
       setIsConfirmingLocation(true); // Abrir el modal de confirmación
     } catch(err) {
         console.error("Geocoding failed:", err);
@@ -723,17 +726,9 @@ export default function NewOrderPage() {
               <DialogHeader>
                   <DialogTitle>Confirmar Ubicación de Entrega</DialogTitle>
                   <DialogDescription>
-                      Por favor, verifica que el marcador en el mapa sea correcto.
+                      Por favor, verifica que el marcador en el mapa sea correcto. Si no, arrástralo a la posición exacta.
                   </DialogDescription>
               </DialogHeader>
-
-              <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800">
-                <Info className="h-5 w-5 text-blue-600" />
-                <AlertTitle className="font-semibold text-blue-900">¿Dirección incorrecta?</AlertTitle>
-                <AlertDescription className="text-blue-800">
-                  Arrastra el marcador al punto exacto o usa tu ubicación actual para corregir.
-                </AlertDescription>
-              </Alert>
 
               <div className="h-[400px] w-full rounded-lg overflow-hidden border my-4">
                   <DeliveryMap
@@ -743,6 +738,14 @@ export default function NewOrderPage() {
                       onLocationChange={(newCoords) => setGeocodedLocation(newCoords)}
                   />
               </div>
+
+               <div className="flex items-center space-x-2 my-4">
+                <Checkbox id="location-confirm" checked={isLocationConfirmed} onCheckedChange={(checked) => setIsLocationConfirmed(checked as boolean)} />
+                <Label htmlFor="location-confirm" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    La ubicación en el mapa es correcta.
+                </Label>
+              </div>
+
               <DialogFooter className="sm:justify-between items-center gap-2">
                  <Button 
                     variant="outline"
@@ -780,7 +783,7 @@ export default function NewOrderPage() {
                 </Button>
                 <Button 
                   onClick={() => handleLocationConfirmation(geocodedLocation!)} 
-                  disabled={isSubmitting || !geocodedLocation}
+                  disabled={isSubmitting || !geocodedLocation || !isLocationConfirmed}
                 >
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MapPin className="mr-2 h-4 w-4" />}
                     Confirmar y Enviar Pedido
