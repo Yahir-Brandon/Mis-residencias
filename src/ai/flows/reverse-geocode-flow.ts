@@ -3,20 +3,20 @@
  * @fileOverview Flujo de IA para geocodificación inversa, convirtiendo coordenadas en una dirección.
  *
  * - reverseGeocodeCoordinates - Una función que convierte latitud y longitud en una dirección.
- * - ReverseGeocodeInputSchema - El tipo de entrada para la función.
- * - ReverseGeocodeOutputSchema - El tipo de retorno para la función.
+ * - ReverseGeocodeInput - El tipo de entrada para la función.
+ * - ReverseGeocodeOutput - El tipo de retorno para la función.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const ReverseGeocodeInputSchema = z.object({
+const ReverseGeocodeInputSchema = z.object({
   lat: z.number().describe('La latitud.'),
   lng: z.number().describe('La longitud.'),
 });
 export type ReverseGeocodeInput = z.infer<typeof ReverseGeocodeInputSchema>;
 
-export const ReverseGeocodeOutputSchema = z.object({
+const ReverseGeocodeOutputSchema = z.object({
   street: z.string().describe('El nombre de la calle.'),
   number: z.string().describe('El número de la calle.'),
   colony: z.string().describe('La colonia o barrio.'),
