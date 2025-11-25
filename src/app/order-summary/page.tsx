@@ -118,7 +118,7 @@ function OrderSummaryContent() {
 
         if (orderData.location) {
             const { lat, lng } = orderData.location;
-            const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&style=feature:all|element:labels|visibility:off&style=feature:road|element:geometry|color:0x999999&style=feature:road.local|element:labels.text.fill|color:0x333333&style=feature:water|element:geometry|color:0xa2daf2&key=${mapsApiKey}`;
+            const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${mapsApiKey}`;
             
             try {
                 const response = await fetch(mapUrl);
