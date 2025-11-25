@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { Loader2, MapPinOff } from 'lucide-react';
+import { geocodeAddress } from '@/ai/flows/geocode-address-flow';
 
 const mapContainerStyle = {
   width: '100%',
@@ -33,28 +34,21 @@ export function DeliveryMap({ address }: DeliveryMapProps) {
         return;
     }
 
-    const geocodeAddress = async () => {
+    const getCoordinates = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`);
-        const data = await response.json();
-        
-        if (data.status === 'OK') {
-          setCoordinates(data.results[0].geometry.location);
-        } else {
-          setError('No se pudo encontrar la dirección. Por favor, verifica que sea correcta.');
-          console.warn('Geocoding API response:', data);
-        }
-      } catch (err) {
-        setError('Error al contactar el servicio de mapas.');
-        console.error(err);
+        const result = await geocodeAddress({ address });
+        setCoordinates(result);
+      } catch (err: any) {
+        setError(err.message || 'No se pudo encontrar la dirección. Por favor, verifica que sea correcta.');
+        console.error('Error al geocodificar la dirección:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    geocodeAddress();
+    getCoordinates();
   }, [address, apiKey]);
 
   if (loading) {
