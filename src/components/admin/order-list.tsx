@@ -177,9 +177,9 @@ export default function OrderList() {
     }
   }
 
-  const handleDeleteOrder = async (userId: string, orderId: string) => {
+  const handleDeleteOrder = async (order: any) => {
     setIsDeleting(true);
-    const orderDocRef = doc(firestore, 'users', userId, 'orders', orderId);
+    const orderDocRef = doc(firestore, 'users', order.userId, 'orders', order.id);
     try {
         await deleteDoc(orderDocRef)
         .catch(error => {
@@ -189,12 +189,31 @@ export default function OrderList() {
             }));
             throw error;
         });
+
+        // Create notification for the user
+        const notificationRef = collection(firestore, 'users', order.userId, 'notifications');
+        const notificationMessage = `Tu pedido para la obra "${order.projectName}" ha sido cancelado y eliminado por un administrador.`;
         
-        setOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
+        await addDoc(notificationRef, {
+          userId: order.userId,
+          orderId: order.id,
+          message: notificationMessage,
+          read: false,
+          createdAt: serverTimestamp(),
+        }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: notificationRef.path,
+                operation: 'create',
+                requestResourceData: { message: notificationMessage }
+            }));
+            console.error("Failed to create delete notification:", error);
+        });
+        
+        setOrders(prevOrders => prevOrders.filter(o => o.id !== order.id));
 
         toast({
             title: "Pedido Eliminado",
-            description: "El pedido ha sido borrado permanentemente.",
+            description: "El pedido ha sido borrado permanentemente y se ha notificado al usuario.",
         });
     } catch(e) {
         console.error("Error al eliminar pedido:", e);
@@ -445,7 +464,7 @@ export default function OrderList() {
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteOrder(order.userId, order.id)} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                        <AlertDialogAction onClick={() => handleDeleteOrder(order)} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
                                             {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Sí, borrar pedido'}
                                         </AlertDialogAction>
                                         </AlertDialogFooter>
