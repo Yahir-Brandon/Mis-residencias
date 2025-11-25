@@ -39,6 +39,7 @@ const orderSchema = z.object({
   phone: z.string().min(10, { message: "El teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, { message: "Solo se permiten números." }),
   street: z.string().min(1, { message: "La calle es requerida." }),
   number: z.string().min(1, {message: 'El número exterior es requerido.'}).regex(/^\d+$/, { message: "Solo se permiten números." }),
+  colony: z.string().min(1, { message: "La colonia es requerida." }),
   postalCode: z.string().min(5, { message: "El código postal debe tener 5 dígitos." }).regex(/^\d+$/, { message: "Solo se permiten números." }),
   state: z.string().min(1, { message: "Debes seleccionar un estado." }),
   municipality: z.string().min(1, { message: "Debes seleccionar un municipio/delegación." }),
@@ -76,6 +77,8 @@ export default function NewOrderPage() {
   const [deliveryAnalysis, setDeliveryAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addressToGeocode, setAddressToGeocode] = useState<string>("");
+  const [showMap, setShowMap] = useState(false);
 
   const form = useForm<z.infer<typeof orderSchema>>({
     resolver: zodResolver(orderSchema),
@@ -85,6 +88,7 @@ export default function NewOrderPage() {
       phone: '',
       street: '',
       number: '',
+      colony: '',
       postalCode: '',
       state: '',
       municipality: '',
@@ -102,15 +106,7 @@ export default function NewOrderPage() {
     name: "materials"
   });
 
-  const watchedAddressFields = form.watch(['street', 'number', 'postalCode', 'municipality', 'state']);
-
-  const fullAddress = useMemo(() => {
-      const [street, number, postalCode, municipality, state] = watchedAddressFields;
-      if (street && number && postalCode && municipality && state) {
-          return `${street} ${number}, ${municipality}, ${state}, C.P. ${postalCode}`;
-      }
-      return "";
-  }, [watchedAddressFields]);
+  const watchedAddressFields = form.watch(['street', 'number', 'colony', 'postalCode', 'municipality', 'state']);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -206,8 +202,19 @@ export default function NewOrderPage() {
       });
   }
 
+  const handleGeocode = () => {
+    const [street, number, colony, postalCode, municipality, state] = watchedAddressFields;
+    const fullAddress = `${street} ${number}, ${colony}, ${municipality}, ${state}, C.P. ${postalCode}`;
+    setAddressToGeocode(fullAddress);
+    setShowMap(true);
+  };
+  
+  const addressFieldsAreValid = useMemo(() => {
+    const [street, number, colony, postalCode, municipality, state] = watchedAddressFields;
+    return street && number && colony && postalCode && municipality && state;
+  }, [watchedAddressFields]);
+
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
-  const isAddressComplete = !!fullAddress;
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 
@@ -313,29 +320,45 @@ export default function NewOrderPage() {
                 />
               </div>
               
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <FormField
-                  control={form.control}
-                  name="postalCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código Postal</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="text" 
-                          inputMode="numeric" 
-                          placeholder="12345" 
-                          {...field} 
-                          onChange={(e) => {
-                            const numericValue = e.target.value.replace(/\D/g, '');
-                            field.onChange(numericValue);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    control={form.control}
+                    name="colony"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Colonia</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Centro" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="postalCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Código Postal</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="text" 
+                            inputMode="numeric" 
+                            placeholder="12345" 
+                            {...field} 
+                            onChange={(e) => {
+                              const numericValue = e.target.value.replace(/\D/g, '');
+                              field.onChange(numericValue);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Controller
                   control={form.control}
                   name="state"
@@ -384,8 +407,16 @@ export default function NewOrderPage() {
                   )}
                 />
               </div>
+              
+              <div className="flex justify-end pt-2">
+                <Button type="button" onClick={handleGeocode} disabled={!addressFieldsAreValid}>
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Buscar Dirección
+                </Button>
+              </div>
 
-               {isAddressComplete && (
+
+              {showMap && (
                     <div className="space-y-4 pt-4">
                          <h3 className="text-lg font-semibold border-b pb-2">Confirmar Ubicación</h3>
                          <Alert>
@@ -398,7 +429,7 @@ export default function NewOrderPage() {
                         <div className="h-[300px] w-full rounded-lg overflow-hidden border">
                             <DeliveryMap
                                 apiKey={mapsApiKey} 
-                                address={fullAddress}
+                                address={addressToGeocode}
                                 onLocationChange={(coords) => {
                                     form.setValue('location', coords, { shouldValidate: true });
                                 }}

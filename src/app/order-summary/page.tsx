@@ -75,99 +75,113 @@ function OrderSummaryContent() {
   }, [error, router]);
 
   const generatePdf = async () => {
-    if (!orderData || !mapContainerRef.current) return;
+    if (!orderData) return;
     setIsGeneratingPdf(true);
 
     try {
-        const mapCanvas = await html2canvas(mapContainerRef.current, { useCORS: true });
-        const mapImage = mapCanvas.toDataURL('image/png');
+        const doc = new jsPDF();
+        const deliveryStart = new Date(orderData.deliveryDates.from.seconds * 1000);
+        const deliveryEnd = new Date(orderData.deliveryDates.to.seconds * 1000);
+        let finalTableY = 0;
 
-      const doc = new jsPDF();
-      const deliveryStart = new Date(orderData.deliveryDates.from.seconds * 1000);
-      const deliveryEnd = new Date(orderData.deliveryDates.to.seconds * 1000);
+        // Encabezado
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
 
-      // Encabezado
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
-
-      // Información del Pedido
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      
-      const details = [
-        { title: 'Solicitante:', content: orderData.requesterName },
-        { title: 'Obra:', content: orderData.projectName },
-        { title: 'Dirección:', content: `${orderData.street} ${orderData.number}, ${orderData.municipality}, ${orderData.state}, C.P. ${orderData.postalCode}` },
-        { title: 'Teléfono:', content: orderData.phone },
-      ];
-
-      doc.autoTable({
-        startY: 30,
-        body: details,
-        theme: 'plain',
-        styles: {
-          cellPadding: { top: 1, right: 2, bottom: 1, left: 0 },
-          fontSize: 10,
-        },
-        columnStyles: {
-          0: { fontStyle: 'bold', cellWidth: 40 },
-          1: { cellWidth: 'auto' },
-        },
-      });
-      
-      let lastY = (doc as any).lastAutoTable.finalY || 60;
-      
-      // Imagen del mapa
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Ubicación de Entrega', 14, lastY + 10);
-      doc.addImage(mapImage, 'PNG', 14, lastY + 15, 180, 70); // Ajusta tamaño y posición según necesites
-      lastY += 85; // Aumenta el espacio vertical para el mapa
-
-      // Tabla de Materiales
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Detalles del Pedido', 14, lastY + 10);
-
-      const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
-      const tableRows = orderData.materials.map((material: any) => {
-        const materialInfo = materialsList.find(m => m.name === material.name);
-        const unitPrice = materialInfo?.price || 0;
-        const subtotal = material.quantity * unitPrice;
-        return [
-            material.name,
-            `${material.quantity} ${materialInfo?.unit}(s)`,
-            `$${unitPrice.toFixed(2)}`,
-            `$${subtotal.toFixed(2)}`
+        // Información del Pedido
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        const details = [
+            { title: 'Solicitante:', content: orderData.requesterName },
+            { title: 'Obra:', content: orderData.projectName },
+            { title: 'Dirección:', content: `${orderData.street} ${orderData.number}, ${orderData.colony}, ${orderData.municipality}, ${orderData.state}, C.P. ${orderData.postalCode}` },
+            { title: 'Teléfono:', content: orderData.phone },
         ];
-      });
 
-      doc.autoTable({
-        startY: lastY + 15,
-        head: [tableColumn],
-        body: tableRows,
-        theme: 'striped',
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        styles: { fontSize: 10 },
-        didDrawPage: (data) => {
-          // Pie de página
-          const pageCount = doc.internal.getNumberOfPages();
-          doc.setFontSize(8);
-          doc.setTextColor(150);
-          doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        doc.autoTable({
+            startY: 30,
+            body: details,
+            theme: 'plain',
+            styles: {
+            cellPadding: { top: 1, right: 2, bottom: 1, left: 0 },
+            fontSize: 10,
+            },
+            columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 40 },
+            1: { cellWidth: 'auto' },
+            },
+        });
+        
+        let lastY = (doc as any).lastAutoTable.finalY || 60;
+
+        if (orderData.location) {
+            const { lat, lng } = orderData.location;
+            const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&style=feature:all|element:labels|visibility:off&style=feature:road|element:geometry|color:0x999999&style=feature:road.local|element:labels.text.fill|color:0x333333&style=feature:water|element:geometry|color:0xa2daf2&key=${mapsApiKey}`;
+            
+            try {
+                const response = await fetch(mapUrl);
+                const imageBlob = await response.blob();
+                const reader = new FileReader();
+                reader.readAsDataURL(imageBlob);
+                await new Promise<void>(resolve => {
+                    reader.onloadend = () => {
+                        const base64data = reader.result;
+                        doc.setFontSize(12);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Ubicación de Entrega', 14, lastY + 10);
+                        doc.addImage(base64data as string, 'PNG', 14, lastY + 15, 180, 70);
+                        lastY += 85; // Aumenta el espacio vertical para el mapa
+                        resolve();
+                    };
+                });
+            } catch (mapError) {
+                console.error("Error fetching static map:", mapError);
+            }
         }
-      });
-      
-      let finalTableY = (doc as any).lastAutoTable.finalY;
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Detalles del Pedido', 14, lastY + 10);
 
-      // Total
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
-      doc.text(`$${orderData.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
+        const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
+        const tableRows = orderData.materials.map((material: any) => {
+            const materialInfo = materialsList.find(m => m.name === material.name);
+            const unitPrice = materialInfo?.price || 0;
+            const subtotal = material.quantity * unitPrice;
+            return [
+                material.name,
+                `${material.quantity} ${materialInfo?.unit}(s)`,
+                `$${unitPrice.toFixed(2)}`,
+                `$${subtotal.toFixed(2)}`
+            ];
+        });
 
-      doc.save(`pedido-${orderData.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
+        doc.autoTable({
+            startY: lastY + 15,
+            head: [tableColumn],
+            body: tableRows,
+            theme: 'striped',
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            styles: { fontSize: 10 },
+            didDrawPage: (data) => {
+                finalTableY = data.cursor?.y ?? 0;
+                const pageCount = doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+            }
+        });
+        
+        finalTableY = (doc as any).lastAutoTable.finalY;
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
+        doc.text(`$${orderData.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
+
+        doc.save(`pedido-${orderData.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
 
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -190,6 +204,7 @@ function OrderSummaryContent() {
     phone,
     street,
     number,
+    colony,
     postalCode,
     state,
     municipality,
@@ -202,7 +217,7 @@ function OrderSummaryContent() {
   
   const deliveryStart = new Date(deliveryDates.from.seconds * 1000);
   const deliveryEnd = new Date(deliveryDates.to.seconds * 1000);
-  const fullAddress = `${street} ${number}, ${municipality}, ${state}, C.P. ${postalCode}`;
+  const fullAddress = `${street} ${number}, ${colony}, ${municipality}, ${state}, C.P. ${postalCode}`;
 
   const currentStatusConfig = statusConfig[status as keyof typeof statusConfig] || statusConfig['Pendiente'];
 

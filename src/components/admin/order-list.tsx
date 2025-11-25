@@ -3,7 +3,7 @@ import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebas
 import { collection, query, doc, updateDoc, deleteDoc, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown } from 'lucide-react';
+import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -44,6 +44,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Separator } from '../ui/separator';
 import { useState, useEffect } from 'react';
+import { DeliveryMap } from '../maps/delivery-map';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -85,6 +86,8 @@ export default function OrderList() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
 
   useEffect(() => {
     const fetchAllOrders = async () => {
@@ -214,74 +217,101 @@ export default function OrderList() {
     setIsGeneratingPdf(true);
 
     try {
-      const doc = new jsPDF();
-      const deliveryStart = new Date(selectedOrder.deliveryDates.from.seconds * 1000);
-      const deliveryEnd = new Date(selectedOrder.deliveryDates.to.seconds * 1000);
+        const doc = new jsPDF();
+        const deliveryStart = new Date(selectedOrder.deliveryDates.from.seconds * 1000);
+        const deliveryEnd = new Date(selectedOrder.deliveryDates.to.seconds * 1000);
+        let finalTableY = 0;
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
 
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      
-      const details = [
-        { title: 'Solicitante:', content: selectedOrder.requesterName },
-        { title: 'Obra:', content: selectedOrder.projectName },
-        { title: 'Dirección:', content: `${selectedOrder.street} ${selectedOrder.number}, ${selectedOrder.municipality}, ${selectedOrder.state}, C.P. ${selectedOrder.postalCode}` },
-        { title: 'Teléfono:', content: selectedOrder.phone },
-      ];
-
-      doc.autoTable({
-        startY: 30,
-        body: details,
-        theme: 'plain',
-        styles: { cellPadding: { top: 1, right: 2, bottom: 1, left: 0 }, fontSize: 10 },
-        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 'auto' } },
-      });
-      
-      const lastY = (doc as any).lastAutoTable.finalY || 60;
-      
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Detalles del Pedido', 14, lastY + 10);
-
-      const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
-      const tableRows = selectedOrder.materials.map((material: any) => {
-        const materialInfo = materialsList.find(m => m.name === material.name);
-        const unitPrice = materialInfo?.price || 0;
-        const subtotal = material.quantity * unitPrice;
-        return [
-            material.name,
-            `${material.quantity} ${materialInfo?.unit}(s)`,
-            `$${unitPrice.toFixed(2)}`,
-            `$${subtotal.toFixed(2)}`
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        
+        const details = [
+            { title: 'Solicitante:', content: selectedOrder.requesterName },
+            { title: 'Obra:', content: selectedOrder.projectName },
+            { title: 'Dirección:', content: `${selectedOrder.street} ${selectedOrder.number}, ${selectedOrder.colony}, ${selectedOrder.municipality}, ${selectedOrder.state}, C.P. ${selectedOrder.postalCode}` },
+            { title: 'Teléfono:', content: selectedOrder.phone },
         ];
-      });
 
-      doc.autoTable({
-        startY: lastY + 15,
-        head: [tableColumn],
-        body: tableRows,
-        theme: 'striped',
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        styles: { fontSize: 10 },
-        didDrawPage: (data) => {
-          const pageCount = doc.internal.getNumberOfPages();
-          doc.setFontSize(8);
-          doc.setTextColor(150);
-          doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        doc.autoTable({
+            startY: 30,
+            body: details,
+            theme: 'plain',
+            styles: { cellPadding: { top: 1, right: 2, bottom: 1, left: 0 }, fontSize: 10 },
+            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 'auto' } },
+        });
+        
+        let lastY = (doc as any).lastAutoTable.finalY || 60;
+        
+        if (selectedOrder.location) {
+            const { lat, lng } = selectedOrder.location;
+            const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&style=feature:all|element:labels|visibility:off&style=feature:road|element:geometry|color:0x999999&style=feature:road.local|element:labels.text.fill|color:0x333333&style=feature:water|element:geometry|color:0xa2daf2&key=${mapsApiKey}`;
+            
+            try {
+                const response = await fetch(mapUrl);
+                const imageBlob = await response.blob();
+                const reader = new FileReader();
+                reader.readAsDataURL(imageBlob);
+                await new Promise<void>(resolve => {
+                    reader.onloadend = () => {
+                        const base64data = reader.result;
+                        doc.setFontSize(12);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('Ubicación de Entrega', 14, lastY + 10);
+                        doc.addImage(base64data as string, 'PNG', 14, lastY + 15, 180, 70);
+                        lastY += 85;
+                        resolve();
+                    };
+                });
+            } catch (mapError) {
+                console.error("Error fetching static map for PDF:", mapError);
+            }
         }
-      });
-      
-      let finalTableY = (doc as any).lastAutoTable.finalY;
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Detalles del Pedido', 14, lastY + 10);
 
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
-      doc.text(`$${selectedOrder.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
+        const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
+        const tableRows = selectedOrder.materials.map((material: any) => {
+            const materialInfo = materialsList.find(m => m.name === material.name);
+            const unitPrice = materialInfo?.price || 0;
+            const subtotal = material.quantity * unitPrice;
+            return [
+                material.name,
+                `${material.quantity} ${materialInfo?.unit}(s)`,
+                `$${unitPrice.toFixed(2)}`,
+                `$${subtotal.toFixed(2)}`
+            ];
+        });
 
-      doc.save(`pedido-${selectedOrder.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
+        doc.autoTable({
+            startY: lastY + 15,
+            head: [tableColumn],
+            body: tableRows,
+            theme: 'striped',
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            styles: { fontSize: 10 },
+            didDrawPage: (data) => {
+                finalTableY = data.cursor?.y ?? 0;
+                const pageCount = doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+            }
+        });
+        
+        finalTableY = (doc as any).lastAutoTable.finalY;
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
+        doc.text(`$${selectedOrder.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
+
+        doc.save(`pedido-${selectedOrder.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
 
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -459,13 +489,16 @@ export default function OrderList() {
                                         <p>{selectedOrder.projectName}</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
-                                    <p>{selectedOrder.street} {selectedOrder.number}, {selectedOrder.municipality}, {selectedOrder.state}, C.P. {selectedOrder.postalCode}</p>
-                                </div>
-                                <div>
+                                 <div>
                                     <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
                                     <p>{selectedOrder.phone}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="font-bold uppercase text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4"/>Ubicación de Entrega:</h3>
+                                    <p>{selectedOrder.street} {selectedOrder.number}, {selectedOrder.colony}, {selectedOrder.municipality}, {selectedOrder.state}, C.P. {selectedOrder.postalCode}</p>
+                                    <div className="h-[250px] w-full rounded-lg overflow-hidden border">
+                                        <DeliveryMap apiKey={mapsApiKey} address="" initialCoordinates={selectedOrder.location} />
+                                    </div>
                                 </div>
                             </div>
 

@@ -144,6 +144,10 @@
         "number": {
           "type": "string"
         },
+        "colony": {
+          "type": "string",
+          "description": "Neighborhood of the delivery address."
+        },
         "postalCode": {
           "type": "string"
         },
@@ -199,7 +203,7 @@
         }
       },
       "required": [
-        "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "status", "createdAt", "location"
+        "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "status", "createdAt", "location", "colony"
       ]
     },
     "Notification": {
