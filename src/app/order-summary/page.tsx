@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
 import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Loader2, FileDown, Home } from 'lucide-react';
+import { Loader2, FileDown, Home, MapPin } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -16,6 +16,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { DeliveryMap } from '@/components/maps/delivery-map';
 
 
 // Aumenta jsPDF con el método autoTable
@@ -270,6 +271,7 @@ function OrderSummaryContent() {
   
   const deliveryStart = new Date(deliveryDates.from.seconds * 1000);
   const deliveryEnd = new Date(deliveryDates.to.seconds * 1000);
+  const fullAddress = `${street} ${number}, ${municipality}, ${state}, C.P. ${postalCode}`;
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
@@ -300,12 +302,13 @@ function OrderSummaryContent() {
                       </div>
                   </div>
                   <div>
-                      <h3 className="font-bold uppercase text-muted-foreground">Dirección de Entrega:</h3>
-                      <p>{street} {number}, {municipality}, {state}, C.P. {postalCode}</p>
-                  </div>
-                  <div>
                       <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
                       <p>{phone}</p>
+                  </div>
+                  <div className="space-y-2">
+                      <h3 className="font-bold uppercase text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4"/>Ubicación de Entrega:</h3>
+                      <p>{fullAddress}</p>
+                      <DeliveryMap address={fullAddress} />
                   </div>
               </div>
 
