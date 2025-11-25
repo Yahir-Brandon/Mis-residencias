@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
 import { useState, useEffect } from "react";
-import { CalendarIcon, Plus, BrainCircuit, Trash2, Loader2, LocateFixed, MapPin } from "lucide-react";
+import { CalendarIcon, Plus, BrainCircuit, Trash2, Loader2, LocateFixed, MapPin, Info } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -26,6 +26,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { useToast } from "@/hooks/use-toast";
 import { geocodeAddress } from "@/app/actions/geocode-actions";
 import { DeliveryMap } from "@/components/maps/delivery-map";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const materialOrderSchema = z.object({
@@ -672,9 +673,18 @@ export default function NewOrderPage() {
               <DialogHeader>
                   <DialogTitle>Confirmar Ubicación de Entrega</DialogTitle>
                   <DialogDescription>
-                      Por favor, verifica que el marcador esté en el lugar correcto. Puedes arrastrarlo para ajustar la posición.
+                      Por favor, verifica que el marcador en el mapa sea correcto.
                   </DialogDescription>
               </DialogHeader>
+
+              <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-800">
+                <Info className="h-5 w-5 text-blue-600" />
+                <AlertTitle className="font-semibold text-blue-900">¿Dirección incorrecta?</AlertTitle>
+                <AlertDescription className="text-blue-800">
+                  Arrastra el marcador al punto exacto o usa tu ubicación actual para corregir.
+                </AlertDescription>
+              </Alert>
+
               <div className="h-[400px] w-full rounded-lg overflow-hidden border my-4">
                   <DeliveryMap
                       apiKey={mapsApiKey}
@@ -707,3 +717,5 @@ export default function NewOrderPage() {
     </div>
   );
 }
+
+    
