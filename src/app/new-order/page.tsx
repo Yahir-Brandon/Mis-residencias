@@ -10,8 +10,8 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { mexicoStates, State } from '@/lib/mexico-states';
-import { useState, useEffect } from "react";
-import { CalendarIcon, Plus, BrainCircuit, Trash2, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { CalendarIcon, Plus, BrainCircuit, Trash2, Loader2, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -24,6 +24,8 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { useToast } from "@/hooks/use-toast";
+import { DeliveryMap } from "@/components/maps/delivery-map";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 const materialOrderSchema = z.object({
@@ -45,6 +47,10 @@ const orderSchema = z.object({
     from: z.date({ required_error: "La fecha de inicio es requerida."}),
     to: z.date({ required_error: "La fecha de fin es requerida."}),
   }),
+  location: z.object({
+    lat: z.number(),
+    lng: z.number(),
+  }).optional(),
 });
 
 type Material = {
@@ -86,7 +92,8 @@ export default function NewOrderPage() {
       deliveryDates: {
         from: undefined,
         to: undefined
-      }
+      },
+      location: undefined,
     },
   });
 
@@ -94,6 +101,16 @@ export default function NewOrderPage() {
     control: form.control,
     name: "materials"
   });
+
+  const watchedAddressFields = form.watch(['street', 'number', 'postalCode', 'municipality', 'state']);
+
+  const fullAddress = useMemo(() => {
+      const [street, number, postalCode, municipality, state] = watchedAddressFields;
+      if (street && number && postalCode && municipality && state) {
+          return `${street} ${number}, ${municipality}, ${state}, C.P. ${postalCode}`;
+      }
+      return "";
+  }, [watchedAddressFields]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -103,6 +120,7 @@ export default function NewOrderPage() {
 
   const watchMaterials = form.watch('materials');
   const deliveryDates = form.watch('deliveryDates');
+  const location = form.watch('location');
 
   const total = watchMaterials.reduce((acc, current) => {
     const materialInfo = materialsList.find(m => m.name === current.name);
@@ -145,7 +163,7 @@ export default function NewOrderPage() {
   };
 
   async function onSubmit(values: z.infer<typeof orderSchema>) {
-    if (!user || !firestore || !deliveryAnalysis) return;
+    if (!user || !firestore || !deliveryAnalysis || !values.location) return;
     setIsSubmitting(true);
     
     const orderData = { 
@@ -189,6 +207,7 @@ export default function NewOrderPage() {
   }
 
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
+  const isAddressComplete = !!fullAddress;
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
@@ -363,6 +382,31 @@ export default function NewOrderPage() {
                   )}
                 />
               </div>
+
+               {isAddressComplete && (
+                    <div className="space-y-4 pt-4">
+                         <h3 className="text-lg font-semibold border-b pb-2">Confirmar Ubicación</h3>
+                         <Alert>
+                            <MapPin className="h-4 w-4" />
+                            <AlertTitle>¡Confirma tu ubicación!</AlertTitle>
+                            <AlertDescription>
+                                Un marcador aparecerá en el mapa basado en la dirección que proporcionaste. Si no es preciso, haz clic en el mapa para ajustar la ubicación exacta de la entrega.
+                            </AlertDescription>
+                        </Alert>
+                        <div className="h-[300px] w-full rounded-lg overflow-hidden border">
+                            <DeliveryMap 
+                                address={fullAddress}
+                                onLocationChange={(coords) => {
+                                    form.setValue('location', coords, { shouldValidate: true });
+                                }}
+                                isDraggable={true}
+                            />
+                        </div>
+                         {form.formState.errors.location && (
+                           <p className="text-sm font-medium text-destructive">{form.formState.errors.location.message}</p>
+                        )}
+                    </div>
+                )}
               
               <h3 className="text-lg font-semibold border-b pb-2 pt-4">Pedido de Material</h3>
 

@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Calendar } from '@/components/ui/calendar';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { DeliveryMap } from '@/components/maps/delivery-map';
@@ -53,6 +54,8 @@ function OrderSummaryContent() {
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     if (error) {
@@ -62,10 +65,13 @@ function OrderSummaryContent() {
   }, [error, router]);
 
   const generatePdf = async () => {
-    if (!orderData) return;
+    if (!orderData || !mapContainerRef.current) return;
     setIsGeneratingPdf(true);
 
     try {
+        const mapCanvas = await html2canvas(mapContainerRef.current, { useCORS: true });
+        const mapImage = mapCanvas.toDataURL('image/png');
+
       const doc = new jsPDF();
       const deliveryStart = new Date(orderData.deliveryDates.from.seconds * 1000);
       const deliveryEnd = new Date(orderData.deliveryDates.to.seconds * 1000);
@@ -100,8 +106,15 @@ function OrderSummaryContent() {
         },
       });
       
-      const lastY = (doc as any).lastAutoTable.finalY || 60;
+      let lastY = (doc as any).lastAutoTable.finalY || 60;
       
+      // Imagen del mapa
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Ubicación de Entrega', 14, lastY + 10);
+      doc.addImage(mapImage, 'PNG', 14, lastY + 15, 180, 70); // Ajusta tamaño y posición según necesites
+      lastY += 85; // Aumenta el espacio vertical para el mapa
+
       // Tabla de Materiales
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
@@ -144,100 +157,6 @@ function OrderSummaryContent() {
       doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
       doc.text(`$${orderData.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
 
-      // Calendario
-      doc.setFontSize(12);
-      doc.text('Periodo de Entrega Programado', 14, finalTableY + 25);
-      
-      const drawMonth = (date: Date, xOffset: number, yOffset: number) => {
-        const month = getMonth(date);
-        const year = getYear(date);
-        const firstDayOfMonth = startOfMonth(date);
-        const startDayOfWeek = (getDay(firstDayOfMonth) + 6) % 7;
-        const daysInMonth = getDaysInMonth(date);
-        const monthName = format(date, 'MMMM yyyy', { locale: es });
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text(monthName.charAt(0).toUpperCase() + monthName.slice(1), xOffset + (3.5 * 7), yOffset, { align: 'center' });
-
-        const cellWidth = 7;
-        const cellHeight = 7;
-        const startX = xOffset;
-        const calendarY = yOffset + 5;
-        const dayHeaders = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
-
-        doc.setFontSize(8);
-        dayHeaders.forEach((header, index) => {
-            doc.text(header, startX + index * cellWidth + cellWidth / 2, calendarY, { align: 'center' });
-        });
-
-        let currentDay = 1;
-        doc.setFont('helvetica', 'normal');
-        doc.setLineWidth(0.2);
-
-        for (let week = 0; week < 6; week++) {
-            for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-                if ((week === 0 && dayOfWeek < startDayOfWeek) || currentDay > daysInMonth) {
-                    continue;
-                }
-                const x = startX + dayOfWeek * cellWidth;
-                const y = calendarY + (week + 1) * cellHeight;
-
-                const currentDate = new Date(year, month, currentDay);
-                const isStartDate = getDate(currentDate) === getDate(deliveryStart) && getMonth(currentDate) === getMonth(deliveryStart) && getYear(currentDate) === getYear(deliveryStart);
-                const isEndDate = getDate(currentDate) === getDate(deliveryEnd) && getMonth(currentDate) === getMonth(deliveryEnd) && getYear(currentDate) === getYear(deliveryEnd);
-                const isInRange = currentDate > deliveryStart && currentDate < deliveryEnd;
-                
-                const originalTextColor = doc.getTextColor();
-                
-                if (isStartDate) {
-                    doc.setFillColor(220, 53, 69); // Rojo
-                    doc.setTextColor(255, 255, 255);
-                    doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
-                } else if (isEndDate) {
-                    doc.setFillColor(25, 135, 84); // Verde
-                    doc.setTextColor(255, 255, 255);
-                    doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
-                } else if (isInRange) {
-                    doc.setFillColor(233, 236, 239); // Gris claro
-                    doc.rect(x, y - cellHeight / 1.5, cellWidth, cellHeight, 'F');
-                }
-                
-                doc.text(String(currentDay), x + cellWidth / 2, y, { align: 'center' });
-                doc.setTextColor(originalTextColor);
-
-                currentDay++;
-            }
-            if (currentDay > daysInMonth) break;
-        }
-      };
-
-      const startMonth = getMonth(deliveryStart);
-      const endMonth = getMonth(deliveryEnd);
-      
-      let calendarYPos = finalTableY + 35;
-      
-      drawMonth(deliveryStart, 14, calendarYPos);
-
-      if(startMonth !== endMonth) {
-        drawMonth(deliveryEnd, 80, calendarYPos);
-      }
-
-      // Leyenda
-      const legendY = calendarYPos + 6 * 7 + 10;
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      
-      // Fecha de Inicio
-      doc.setFillColor(220, 53, 69); // Rojo
-      doc.rect(14, legendY - 2, 3, 3, 'F');
-      doc.text('Inicio de entrega', 20, legendY);
-
-      // Fecha de Fin
-      doc.setFillColor(25, 135, 84); // Verde
-      doc.rect(50, legendY - 2, 3, 3, 'F');
-      doc.text('Fin de entrega', 56, legendY);
-
       doc.save(`pedido-${orderData.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
 
     } catch (error) {
@@ -267,6 +186,7 @@ function OrderSummaryContent() {
     materials,
     deliveryDates,
     total,
+    location
   } = orderData;
   
   const deliveryStart = new Date(deliveryDates.from.seconds * 1000);
@@ -308,7 +228,9 @@ function OrderSummaryContent() {
                   <div className="space-y-2">
                       <h3 className="font-bold uppercase text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4"/>Ubicación de Entrega:</h3>
                       <p>{fullAddress}</p>
-                      <DeliveryMap address={fullAddress} />
+                       <div ref={mapContainerRef} className="h-[250px] w-full rounded-lg overflow-hidden border">
+                          <DeliveryMap address={fullAddress} initialCoordinates={location} />
+                       </div>
                   </div>
               </div>
 

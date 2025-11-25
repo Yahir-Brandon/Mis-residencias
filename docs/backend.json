@@ -153,6 +153,15 @@
         "municipality": {
           "type": "string"
         },
+        "location": {
+            "type": "object",
+            "description": "Geographic coordinates of the delivery address.",
+            "properties": {
+                "lat": { "type": "number", "description": "Latitude" },
+                "lng": { "type": "number", "description": "Longitude" }
+            },
+            "required": ["lat", "lng"]
+        },
         "materials": {
           "type": "array",
           "items": {
@@ -190,7 +199,7 @@
         }
       },
       "required": [
-        "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "status", "createdAt"
+        "userId", "requesterName", "projectName", "materials", "deliveryDates", "total", "priority", "status", "createdAt", "location"
       ]
     },
     "Notification": {
