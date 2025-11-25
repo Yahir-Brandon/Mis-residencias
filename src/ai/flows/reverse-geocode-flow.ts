@@ -53,15 +53,16 @@ const reverseGeocodeTool = ai.defineTool(
     const result = data.results[0];
     const addressComponents = result.address_components;
 
-    const getAddressComponent = (type: string) => {
-        return addressComponents.find((c: any) => c.types.includes(type))?.long_name || '';
+    const getAddressComponent = (...types: string[]) => {
+        const component = addressComponents.find((c: any) => types.some(t => c.types.includes(t)));
+        return component?.long_name || '';
     }
 
     return {
         street: getAddressComponent('route'),
         number: getAddressComponent('street_number'),
-        colony: getAddressComponent('neighborhood') || getAddressComponent('sublocality'),
-        municipality: getAddressComponent('locality') || getAddressComponent('administrative_area_level_2'),
+        colony: getAddressComponent('neighborhood', 'sublocality'),
+        municipality: getAddressComponent('locality', 'administrative_area_level_2'),
         state: getAddressComponent('administrative_area_level_1'),
         postalCode: getAddressComponent('postal_code'),
     };
