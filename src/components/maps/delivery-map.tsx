@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { Loader2, MapPinOff } from 'lucide-react';
 import { geocodeAddress } from '@/app/actions/geocode-actions';
 
@@ -10,7 +10,7 @@ const mapContainerStyle = {
   height: '100%',
 };
 
-const center = {
+const defaultCenter = {
   lat: 19.4326,
   lng: -99.1332
 };
@@ -24,26 +24,23 @@ interface DeliveryMapProps {
 }
 
 export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoordinates, onLocationChange }: DeliveryMapProps) {
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(initialCoordinates || null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: apiKey,
+  });
+
+  const [coordinates, setCoordinates] = useState<{ lat: number, lng: number } | null>(initialCoordinates || null);
+  const [geocodingError, setGeocodingError] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   useEffect(() => {
-    if (!apiKey) {
-        setError('La clave de API de Google Maps no está configurada.');
-        setLoading(false);
+    if (!address || initialCoordinates) {
+        setCoordinates(initialCoordinates || null);
         return;
-    }
-
-    if (initialCoordinates) {
-        setCoordinates(initialCoordinates);
-        setLoading(false);
-        return;
-    }
+    };
 
     const getCoordinates = async () => {
-      setLoading(true);
-      setError(null);
+      setIsGeocoding(true);
+      setGeocodingError(null);
       try {
         const result = await geocodeAddress({ address });
         setCoordinates(result);
@@ -51,21 +48,16 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
             onLocationChange(result);
         }
       } catch (err: any) {
-        setError(err.message || 'No se pudo encontrar la dirección. Por favor, verifica que sea correcta.');
+        setGeocodingError(err.message || 'No se pudo encontrar la dirección. Por favor, verifica que sea correcta.');
         console.error('Error al geocodificar la dirección:', err);
       } finally {
-        setLoading(false);
+        setIsGeocoding(false);
       }
     };
     
-    // Solo geocodifica si hay una dirección y no hay coordenadas iniciales.
-    if (address && !initialCoordinates) {
-        getCoordinates();
-    } else {
-        setLoading(false);
-    }
+    getCoordinates();
 
-  }, [address, apiKey, initialCoordinates, onLocationChange]);
+  }, [address, initialCoordinates, onLocationChange]);
 
   const handleMapClick = (e: google.maps.MapMouseEvent) => {
     if (isDraggable && e.latLng) {
@@ -80,38 +72,48 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full bg-muted">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-        <p className="text-sm text-muted-foreground">Cargando mapa...</p>
-      </div>
-    );
-  }
+  const mapCenter = coordinates || defaultCenter;
 
-  if (error || !apiKey) {
+  if (loadError) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-destructive/10 text-destructive p-4">
         <MapPinOff className="h-8 w-8 mb-2" />
-        <p className="text-sm font-semibold">Error al mostrar el mapa</p>
-        <p className="text-xs text-center">{error || 'La clave de API no está configurada.'}</p>
+        <p className="text-sm font-semibold">Error al cargar el script del mapa</p>
+        <p className="text-xs text-center">Verifica la configuración de la API Key.</p>
       </div>
     );
   }
 
+  if (!isLoaded || isGeocoding) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-muted">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+        <p className="text-sm text-muted-foreground">{isGeocoding ? 'Buscando dirección...' : 'Cargando mapa...'}</p>
+      </div>
+    );
+  }
+
+  if (geocodingError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full bg-destructive/10 text-destructive p-4">
+            <MapPinOff className="h-8 w-8 mb-2" />
+            <p className="text-sm font-semibold">Error de Geocodificación</p>
+            <p className="text-xs text-center">{geocodingError}</p>
+        </div>
+      )
+  }
+
   return (
-    <LoadScript googleMapsApiKey={apiKey}>
-      <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        center={coordinates || center}
-        zoom={coordinates ? 16 : 10}
-        onClick={handleMapClick}
-        options={{
-            draggableCursor: isDraggable ? 'pointer' : 'grab',
-        }}
-      >
-        {coordinates && <Marker position={coordinates} />}
-      </GoogleMap>
-    </LoadScript>
+    <GoogleMap
+      mapContainerStyle={mapContainerStyle}
+      center={mapCenter}
+      zoom={coordinates ? 16 : 10}
+      onClick={handleMapClick}
+      options={{
+          draggableCursor: isDraggable ? 'pointer' : 'grab',
+      }}
+    >
+      {coordinates && <Marker position={coordinates} />}
+    </GoogleMap>
   );
 }
