@@ -281,7 +281,8 @@ export default function NewOrderPage() {
                     description: "No se pudo obtener tu ubicación actual. Asegúrate de haber concedido los permisos.",
                 });
                 setIsGettingLocation(false);
-            }
+            },
+            { enableHighAccuracy: true }
         );
     } else {
         toast({
@@ -742,8 +743,8 @@ export default function NewOrderPage() {
                       onLocationChange={(newCoords) => setGeocodedLocation(newCoords)}
                   />
               </div>
-              <DialogFooter className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button 
+              <DialogFooter className="sm:justify-between items-center gap-2">
+                 <Button 
                     variant="outline"
                     onClick={() => {
                         if ("geolocation" in navigator) {
@@ -762,7 +763,8 @@ export default function NewOrderPage() {
                                         title: "Error de Ubicación",
                                         description: "No se pudo obtener tu ubicación actual. Asegúrate de haber concedido los permisos.",
                                     });
-                                }
+                                },
+                                { enableHighAccuracy: true }
                             );
                         } else {
                             toast({
@@ -772,7 +774,6 @@ export default function NewOrderPage() {
                             });
                         }
                     }}
-                    className="col-span-1"
                 >
                     <LocateFixed className="mr-2 h-4 w-4"/>
                     Usar mi Ubicación
@@ -780,10 +781,9 @@ export default function NewOrderPage() {
                 <Button 
                   onClick={() => handleLocationConfirmation(geocodedLocation!)} 
                   disabled={isSubmitting || !geocodedLocation}
-                  className="sm:col-span-2"
                 >
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <MapPin className="mr-2 h-4 w-4" />}
-                    Sí, la ubicación es correcta
+                    Confirmar y Enviar Pedido
                 </Button>
               </DialogFooter>
           </DialogContent>
