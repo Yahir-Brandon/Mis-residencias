@@ -200,6 +200,14 @@
           "type": "string",
           "format": "date-time",
           "description": "Timestamp when the order was created."
+        },
+        "deliveryConfirmation": {
+            "type": "object",
+            "description": "Contains information about the delivery confirmation.",
+            "properties": {
+                "signatureDataUrl": { "type": "string", "description": "The Data URL of the signature image." },
+                "confirmedAt": { "type": "string", "format": "date-time", "description": "Timestamp when the delivery was confirmed."}
+            }
         }
       },
       "required": [

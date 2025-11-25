@@ -3,7 +3,7 @@ import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebas
 import { collection, query, doc, updateDoc, deleteDoc, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown, MapPin, Edit } from 'lucide-react';
+import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, Truck, Package, XCircle, Trash2, Eye, FileDown, MapPin, Edit, DownloadCloud } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -130,15 +130,20 @@ export default function OrderList() {
   }, [firestore]);
 
 
-  const handleStatusChange = async (order: any, newStatus: OrderStatus) => {
+  const handleStatusChange = async (order: any, newStatus: OrderStatus, deliveryData?: any) => {
     const orderDocRef = doc(firestore, 'users', order.userId, 'orders', order.id);
     try {
-        await updateDoc(orderDocRef, { status: newStatus })
+        const updateData: any = { status: newStatus };
+        if (deliveryData) {
+            updateData.deliveryConfirmation = deliveryData;
+        }
+
+        await updateDoc(orderDocRef, updateData)
         .catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: orderDocRef.path,
                 operation: 'update',
-                requestResourceData: { status: newStatus }
+                requestResourceData: updateData
             }));
             throw error;
         });
@@ -163,7 +168,7 @@ export default function OrderList() {
             console.error("Failed to create notification:", error);
         });
 
-        setOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status: newStatus} : o));
+        setOrders(prevOrders => prevOrders.map(o => o.id === order.id ? {...o, status: newStatus, deliveryConfirmation: deliveryData || o.deliveryConfirmation } : o));
 
         toast({
             title: "Estado del Pedido Actualizado",
@@ -233,49 +238,66 @@ export default function OrderList() {
     setSelectedOrder(order);
   };
 
-  const handleGenerateConfirmationPdf = async (signatureDataUrl: string) => {
+  const generateConfirmationPdf = (order: any, signatureDataUrl: string, confirmedAt: Date) => {
+      const docPdf = new jsPDF();
+      
+      // Encabezado
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setFontSize(20);
+      docPdf.text('Confirmación de Entrega', 105, 20, { align: 'center' });
+
+      // Información del Pedido
+      docPdf.setFontSize(12);
+      docPdf.setFont('helvetica', 'normal');
+      const deliveryDate = format(confirmedAt, "dd 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs.'", { locale: es });
+      const confirmationText = `Yo, ${order.requesterName}, confirmo haber recibido a mi entera satisfacción los materiales correspondientes al pedido de la obra "${order.projectName}" con ID: ${order.id}, en la fecha ${deliveryDate}.`;
+      
+      const splitText = docPdf.splitTextToSize(confirmationText, 180);
+      docPdf.text(splitText, 14, 40);
+      
+      // Firma
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.text('Firma de Recepción:', 14, 80);
+      docPdf.addImage(signatureDataUrl, 'PNG', 14, 85, 180, 60);
+      docPdf.line(14, 150, 196, 150); // Línea debajo de la firma
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.text(order.requesterName, 105, 155, { align: 'center' });
+      docPdf.setFontSize(10);
+      docPdf.text("Nombre y Firma", 105, 160, { align: 'center' });
+
+      return docPdf;
+  };
+
+
+  const handleSaveSignature = async (signatureDataUrl: string) => {
     if (!selectedOrder) return;
     
-    const doc = new jsPDF();
-    
-    // Encabezado
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text('Confirmación de Entrega', 105, 20, { align: 'center' });
+    const confirmedAt = new Date();
+    const deliveryData = {
+        signatureDataUrl,
+        confirmedAt: confirmedAt.toISOString(),
+    };
 
-    // Información del Pedido
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    const deliveryDate = format(new Date(), "dd 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs.'", { locale: es });
-    const confirmationText = `Yo, ${selectedOrder.requesterName}, confirmo haber recibido a mi entera satisfacción los materiales correspondientes al pedido de la obra "${selectedOrder.projectName}" con ID: ${selectedOrder.id}, en la fecha ${deliveryDate}.`;
+    const docPdf = generateConfirmationPdf(selectedOrder, signatureDataUrl, confirmedAt);
+    docPdf.save(`confirmacion-entrega-${selectedOrder.id}.pdf`);
     
-    const splitText = doc.splitTextToSize(confirmationText, 180);
-    doc.text(splitText, 14, 40);
+    await handleStatusChange(selectedOrder, 'Entregado', deliveryData);
     
-    // Firma
-    doc.setFont('helvetica', 'bold');
-    doc.text('Firma de Recepción:', 14, 80);
-    doc.addImage(signatureDataUrl, 'PNG', 14, 85, 180, 60);
-    doc.line(14, 150, 196, 150); // Línea debajo de la firma
-    doc.setFont('helvetica', 'normal');
-    doc.text(selectedOrder.requesterName, 105, 155, { align: 'center' });
-    doc.setFontSize(10);
-    doc.text("Nombre y Firma", 105, 160, { align: 'center' });
-
-    // Guardar PDF
-    doc.save(`confirmacion-entrega-${selectedOrder.id}.pdf`);
-    
-    // Actualizar estado del pedido
-    await handleStatusChange(selectedOrder, 'Entregado');
-    
-    setIsSignatureModalOpen(false); // Cerrar el modal
+    setIsSignatureModalOpen(false);
     toast({
         title: "Entrega Confirmada",
         description: "Se ha generado el PDF de confirmación y el pedido se marcó como 'Entregado'."
     });
   }
 
-  const generatePdf = async () => {
+  const downloadConfirmationPdf = (order: any) => {
+    if (!order.deliveryConfirmation?.signatureDataUrl) return;
+    const confirmedAt = new Date(order.deliveryConfirmation.confirmedAt);
+    const docPdf = generateConfirmationPdf(order, order.deliveryConfirmation.signatureDataUrl, confirmedAt);
+    docPdf.save(`confirmacion-entrega-${order.id}.pdf`);
+  };
+
+  const generateOrderPdf = async () => {
     if (!selectedOrder) return;
     setIsGeneratingPdf(true);
 
@@ -471,16 +493,23 @@ export default function OrderList() {
                                 </DropdownMenuItem>
                                 </DialogTrigger>
 
-                                <DialogTrigger asChild>
-                                  <DropdownMenuItem 
-                                    onSelect={() => handleViewDetails(order)}
-                                    disabled={order.status === 'Cancelado' || order.status === 'Pendiente'}
-                                    onClick={() => setIsSignatureModalOpen(true)}
-                                  >
+                                <DropdownMenuItem 
+                                  onSelect={() => {
+                                      handleViewDetails(order);
+                                      setIsSignatureModalOpen(true);
+                                  }}
+                                  disabled={order.status === 'Cancelado' || order.status === 'Pendiente' || order.status === 'En proceso'}
+                                >
                                       <Edit className="mr-2 h-4 w-4" />
                                       Confirmar Entrega
+                                </DropdownMenuItem>
+
+                                {order.status === 'Entregado' && order.deliveryConfirmation && (
+                                  <DropdownMenuItem onSelect={() => downloadConfirmationPdf(order)}>
+                                      <DownloadCloud className="mr-2 h-4 w-4" />
+                                      Descargar Confirmación
                                   </DropdownMenuItem>
-                                </DialogTrigger>
+                                )}
 
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
@@ -624,7 +653,7 @@ export default function OrderList() {
                             </div>
                         </div>
                         <DialogFooter className="pt-4">
-                            <Button onClick={generatePdf} disabled={isGeneratingPdf}>
+                            <Button onClick={generateOrderPdf} disabled={isGeneratingPdf}>
                                 {isGeneratingPdf ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -660,7 +689,7 @@ export default function OrderList() {
                         <p className='text-sm text-muted-foreground mb-4'>
                             Yo, <span className='font-bold'>{selectedOrder.requesterName}</span>, confirmo haber recibido a mi entera satisfacción los materiales correspondientes a este pedido.
                         </p>
-                        <SignaturePad onSave={handleGenerateConfirmationPdf} />
+                        <SignaturePad onSave={handleSaveSignature} />
                     </div>
                     </>
                 )}
