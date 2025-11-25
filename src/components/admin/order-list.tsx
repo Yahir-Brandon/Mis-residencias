@@ -474,7 +474,7 @@ export default function OrderList() {
                                 <DialogTrigger asChild>
                                   <DropdownMenuItem 
                                     onSelect={() => handleViewDetails(order)}
-                                    disabled={order.status !== 'Enviado'}
+                                    disabled={order.status === 'Cancelado' || order.status === 'Pendiente'}
                                     onClick={() => setIsSignatureModalOpen(true)}
                                   >
                                       <Edit className="mr-2 h-4 w-4" />
@@ -496,13 +496,6 @@ export default function OrderList() {
                                 >
                                     <Truck className="mr-2 h-4 w-4" />
                                     Marcar como "Enviado"
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleStatusChange(order, 'Entregado')}
-                                  disabled={isFinalState}
-                                >
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Marcar como "Entregado"
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
