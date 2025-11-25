@@ -17,7 +17,7 @@ const defaultCenter = {
 
 interface DeliveryMapProps {
   apiKey: string;
-  address: string;
+  address?: string;
   isDraggable?: boolean;
   initialCoordinates?: { lat: number; lng: number };
   onLocationChange?: (coords: { lat: number; lng: number }) => void;
@@ -33,10 +33,12 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
   const [isGeocoding, setIsGeocoding] = useState(false);
 
   useEffect(() => {
-    if (!address || initialCoordinates) {
-        setCoordinates(initialCoordinates || null);
+    if (initialCoordinates) {
+        setCoordinates(initialCoordinates);
         return;
-    };
+    }
+
+    if (!address) return;
 
     const getCoordinates = async () => {
       setIsGeocoding(true);
