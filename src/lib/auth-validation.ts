@@ -37,8 +37,9 @@ export const businessSignupSchema = z.object({
   legalRepName: z.string().min(1, { message: "El nombre del representante legal es requerido." }),
   email: z.string().email({ message: "Correo electrónico inválido." }),
   rfc: z.string()
-    .min(12, { message: "El RFC debe tener entre 12 y 13 caracteres." })
-    .max(13, { message: "El RFC debe tener entre 12 y 13 caracteres." }),
+    .min(12, { message: "El RFC debe tener 12 o 13 caracteres." })
+    .max(13, { message: "El RFC debe tener 12 o 13 caracteres." })
+    .regex(/^[A-Z&Ñ]{3,4}\d{6}[A-Z\d]{3}$/, { message: "Formato de RFC inválido. Ejemplo: ABC123456A78." }),
   phone: z.string().min(10, { message: "El número de teléfono debe tener al menos 10 dígitos." }).regex(/^\d+$/, "Solo se permiten números."),
   password: passwordValidation,
   confirmPassword: z.string(),
