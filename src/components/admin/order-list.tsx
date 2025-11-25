@@ -3,7 +3,7 @@ import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebas
 import { collection, query, doc, updateDoc, deleteDoc, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown, MapPin } from 'lucide-react';
+import { Loader2, AlertTriangle, ShoppingCart, MoreHorizontal, CheckCircle, Truck, Package, XCircle, Trash2, Eye, FileDown, MapPin, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -43,8 +43,9 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Separator } from '../ui/separator';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DeliveryMap } from '../maps/delivery-map';
+import SignaturePad from './signature-pad';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -86,6 +87,7 @@ export default function OrderList() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 
@@ -230,6 +232,48 @@ export default function OrderList() {
   const handleViewDetails = (order: any) => {
     setSelectedOrder(order);
   };
+
+  const handleGenerateConfirmationPdf = async (signatureDataUrl: string) => {
+    if (!selectedOrder) return;
+    
+    const doc = new jsPDF();
+    
+    // Encabezado
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('Confirmación de Entrega', 105, 20, { align: 'center' });
+
+    // Información del Pedido
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    const deliveryDate = format(new Date(), "dd 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs.'", { locale: es });
+    const confirmationText = `Yo, ${selectedOrder.requesterName}, confirmo haber recibido a mi entera satisfacción los materiales correspondientes al pedido de la obra "${selectedOrder.projectName}" con ID: ${selectedOrder.id}, en la fecha ${deliveryDate}.`;
+    
+    const splitText = doc.splitTextToSize(confirmationText, 180);
+    doc.text(splitText, 14, 40);
+    
+    // Firma
+    doc.setFont('helvetica', 'bold');
+    doc.text('Firma de Recepción:', 14, 80);
+    doc.addImage(signatureDataUrl, 'PNG', 14, 85, 180, 60);
+    doc.line(14, 150, 196, 150); // Línea debajo de la firma
+    doc.setFont('helvetica', 'normal');
+    doc.text(selectedOrder.requesterName, 105, 155, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text("Nombre y Firma", 105, 160, { align: 'center' });
+
+    // Guardar PDF
+    doc.save(`confirmacion-entrega-${selectedOrder.id}.pdf`);
+    
+    // Actualizar estado del pedido
+    await handleStatusChange(selectedOrder, 'Entregado');
+    
+    setIsSignatureModalOpen(false); // Cerrar el modal
+    toast({
+        title: "Entrega Confirmada",
+        description: "Se ha generado el PDF de confirmación y el pedido se marcó como 'Entregado'."
+    });
+  }
 
   const generatePdf = async () => {
     if (!selectedOrder) return;
@@ -426,6 +470,18 @@ export default function OrderList() {
                                     Ver Detalles del Pedido
                                 </DropdownMenuItem>
                                 </DialogTrigger>
+
+                                <DialogTrigger asChild>
+                                  <DropdownMenuItem 
+                                    onSelect={() => handleViewDetails(order)}
+                                    disabled={order.status !== 'Enviado'}
+                                    onClick={() => setIsSignatureModalOpen(true)}
+                                  >
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Confirmar Entrega
+                                  </DropdownMenuItem>
+                                </DialogTrigger>
+
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   onClick={() => handleStatusChange(order, 'En proceso')} 
@@ -596,6 +652,28 @@ export default function OrderList() {
                 )}
             </DialogContent>
         </Dialog>
+        
+        <Dialog open={isSignatureModalOpen} onOpenChange={setIsSignatureModalOpen}>
+            <DialogContent className="max-w-xl">
+                {selectedOrder && (
+                    <>
+                    <DialogHeader>
+                        <DialogTitle>Confirmación de Entrega</DialogTitle>
+                        <DialogDescription>
+                            El cliente debe firmar para confirmar la recepción de los materiales del pedido para la obra "{selectedOrder.projectName}".
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className='py-4'>
+                        <p className='text-sm text-muted-foreground mb-4'>
+                            Yo, <span className='font-bold'>{selectedOrder.requesterName}</span>, confirmo haber recibido a mi entera satisfacción los materiales correspondientes a este pedido.
+                        </p>
+                        <SignaturePad onSave={handleGenerateConfirmationPdf} />
+                    </div>
+                    </>
+                )}
+            </DialogContent>
+        </Dialog>
+
       </CardContent>
     </Card>
   );
