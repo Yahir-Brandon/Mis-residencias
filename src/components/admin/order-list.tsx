@@ -332,86 +332,102 @@ export default function OrderList() {
                     </TableCell>
                 </TableRow>
                 )}
-                {!isLoading && !error && orders?.map((order) => (
-                <TableRow key={order.id}>
-                    <TableCell>
-                    {order.createdAt ? format(order.createdAt.toDate(), 'dd/MM/yyyy', { locale: es }) : 'N/A'}
-                    </TableCell>
-                    <TableCell>{order.requesterName}</TableCell>
-                    <TableCell>{order.projectName}</TableCell>
-                    <TableCell>${order.total.toFixed(2)}</TableCell>
-                    <TableCell>
-                        <Badge className={priorityStyles[order.priority] || 'bg-gray-400'}>
-                            {order.priority}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant="outline" className={statusStyles[order.status as OrderStatus] || ''}>
-                            {order.status}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Abrir menú</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DialogTrigger asChild>
-                            <DropdownMenuItem onSelect={() => handleViewDetails(order)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver Detalles del Pedido
-                            </DropdownMenuItem>
-                            </DialogTrigger>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleStatusChange(order, 'En proceso')}>
-                                <Package className="mr-2 h-4 w-4" />
-                                Marcar como "En proceso"
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(order, 'Enviado')}>
-                                <Truck className="mr-2 h-4 w-4" />
-                                Marcar como "Enviado"
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusChange(order, 'Entregado')}>
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Marcar como "Entregado"
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" onClick={() => handleStatusChange(order, 'Cancelado')}>
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Cancelar Pedido
-                            </DropdownMenuItem>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 focus:bg-red-50">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Borrar Pedido
-                                    </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta acción no se puede deshacer. Esto eliminará permanentemente el pedido de la base de datos.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteOrder(order.userId, order.id)} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Sí, borrar pedido'}
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                {!isLoading && !error && orders?.map((order) => {
+                  const isFinalState = order.status === 'Entregado' || order.status === 'Cancelado';
+                  return (
+                    <TableRow key={order.id}>
+                        <TableCell>
+                        {order.createdAt ? format(order.createdAt.toDate(), 'dd/MM/yyyy', { locale: es }) : 'N/A'}
+                        </TableCell>
+                        <TableCell>{order.requesterName}</TableCell>
+                        <TableCell>{order.projectName}</TableCell>
+                        <TableCell>${order.total.toFixed(2)}</TableCell>
+                        <TableCell>
+                            <Badge className={priorityStyles[order.priority] || 'bg-gray-400'}>
+                                {order.priority}
+                            </Badge>
+                        </TableCell>
+                        <TableCell>
+                            <Badge variant="outline" className={statusStyles[order.status as OrderStatus] || ''}>
+                                {order.status}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menú</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DialogTrigger asChild>
+                                <DropdownMenuItem onSelect={() => handleViewDetails(order)}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Ver Detalles del Pedido
+                                </DropdownMenuItem>
+                                </DialogTrigger>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleStatusChange(order, 'En proceso')} 
+                                  disabled={isFinalState || order.status === 'En proceso' || order.status === 'Enviado'}
+                                >
+                                    <Package className="mr-2 h-4 w-4" />
+                                    Marcar como "En proceso"
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleStatusChange(order, 'Enviado')}
+                                  disabled={isFinalState || order.status === 'Enviado'}
+                                >
+                                    <Truck className="mr-2 h-4 w-4" />
+                                    Marcar como "Enviado"
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleStatusChange(order, 'Entregado')}
+                                  disabled={isFinalState}
+                                >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Marcar como "Entregado"
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-amber-600 focus:text-amber-700 focus:bg-amber-50" 
+                                  onClick={() => handleStatusChange(order, 'Cancelado')}
+                                  disabled={isFinalState}
+                                >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cancelar Pedido
+                                </DropdownMenuItem>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600 focus:text-red-700 focus:bg-red-50">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Borrar Pedido
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta acción no se puede deshacer. Esto eliminará permanentemente el pedido de la base de datos.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteOrder(order.userId, order.id)} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Sí, borrar pedido'}
+                                        </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
 
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                </TableRow>
-                ))}
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                  );
+                })}
                 {!isLoading && !error && orders?.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
