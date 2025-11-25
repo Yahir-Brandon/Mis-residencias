@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
+import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import { Loader2, MapPinOff } from 'lucide-react';
 import { geocodeAddress } from '@/app/actions/geocode-actions';
 
@@ -33,15 +33,17 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
   const [isGeocoding, setIsGeocoding] = useState(false);
 
   useEffect(() => {
-    // Si se proporcionan coordenadas iniciales, darles prioridad.
+    // Si se proporcionan coordenadas iniciales, darles prioridad y no hacer nada más.
     if (initialCoordinates) {
-        setCoordinates(initialCoordinates);
+        if (coordinates?.lat !== initialCoordinates.lat || coordinates?.lng !== initialCoordinates.lng) {
+            setCoordinates(initialCoordinates);
+        }
         return;
     }
-
+    
     // Si no hay coordenadas iniciales pero sí una dirección, geocodificar.
     if (!address) {
-        setCoordinates(null); // Limpiar si no hay ni dirección ni coordenadas
+        setCoordinates(null);
         return;
     }
 
@@ -64,7 +66,7 @@ export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoord
     
     getCoordinates();
 
-  }, [address, initialCoordinates, onLocationChange]);
+  }, [address, initialCoordinates]);
 
   const handleMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
     if (isDraggable && e.latLng && onLocationChange) {
