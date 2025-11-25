@@ -1,9 +1,7 @@
 /**
  * @fileOverview Flujo y herramienta de IA para la geocodificación de direcciones utilizando la API de Google Maps.
  *
- * - geocodeAddress - Una función que convierte una dirección de texto en coordenadas geográficas.
- * - GeocodeAddressInputSchema - El esquema de entrada para la función.
- * - GeocodeAddressOutputSchema - El esquema de salida para la función.
+ * - geocodeAddressFlow - El flujo de Genkit que realiza la geocodificación.
  * - geocodeAddressTool - Una herramienta de Genkit que expone la funcionalidad de geocodificación.
  */
 
@@ -20,18 +18,6 @@ export const GeocodeAddressOutputSchema = z.object({
   lng: z.number().describe('La longitud de la dirección.'),
 });
 export type GeocodeAddressOutput = z.infer<typeof GeocodeAddressOutputSchema>;
-
-/**
- * Convierte una dirección de texto en coordenadas geográficas.
- * @param input Un objeto que contiene la dirección a geocodificar.
- * @returns Una promesa que se resuelve con las coordenadas de latitud y longitud.
- */
-export async function geocodeAddress(
-  input: GeocodeAddressInput
-): Promise<GeocodeAddressOutput> {
-  'use server';
-  return geocodeAddressFlow(input);
-}
 
 // Define la herramienta de Genkit para la geocodificación
 export const geocodeAddressTool = ai.defineTool(
@@ -65,7 +51,7 @@ export const geocodeAddressTool = ai.defineTool(
 
 
 // Define el flujo de Genkit que utiliza la herramienta de geocodificación.
-const geocodeAddressFlow = ai.defineFlow(
+export const geocodeAddressFlow = ai.defineFlow(
   {
     name: 'geocodeAddressFlow',
     inputSchema: GeocodeAddressInputSchema,

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { Loader2, MapPinOff } from 'lucide-react';
-import { geocodeAddress } from '@/ai/flows/geocode-address-flow';
+import { geocodeAddress } from '@/app/actions/geocode-actions';
 
 const mapContainerStyle = {
   width: '100%',
