@@ -50,7 +50,7 @@ const orderSchema = z.object({
   location: z.object({
     lat: z.number(),
     lng: z.number(),
-  }).optional(),
+  }),
 });
 
 type Material = {
@@ -208,6 +208,8 @@ export default function NewOrderPage() {
 
   const isCdmx = selectedState?.nombre === 'Ciudad de México';
   const isAddressComplete = !!fullAddress;
+  const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
@@ -394,7 +396,8 @@ export default function NewOrderPage() {
                             </AlertDescription>
                         </Alert>
                         <div className="h-[300px] w-full rounded-lg overflow-hidden border">
-                            <DeliveryMap 
+                            <DeliveryMap
+                                apiKey={mapsApiKey} 
                                 address={fullAddress}
                                 onLocationChange={(coords) => {
                                     form.setValue('location', coords, { shouldValidate: true });

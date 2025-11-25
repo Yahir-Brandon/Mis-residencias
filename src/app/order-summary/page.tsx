@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
-import { format, getMonth, getYear, getDaysInMonth, startOfMonth, getDay, getDate, addMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Loader2, FileDown, Home, MapPin } from 'lucide-react';
 import { Logo } from '@/components/logo';
@@ -55,6 +55,7 @@ function OrderSummaryContent() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 
   useEffect(() => {
@@ -229,7 +230,7 @@ function OrderSummaryContent() {
                       <h3 className="font-bold uppercase text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4"/>Ubicación de Entrega:</h3>
                       <p>{fullAddress}</p>
                        <div ref={mapContainerRef} className="h-[250px] w-full rounded-lg overflow-hidden border">
-                          <DeliveryMap address={fullAddress} initialCoordinates={location} />
+                          <DeliveryMap apiKey={mapsApiKey} address={fullAddress} initialCoordinates={location} />
                        </div>
                   </div>
               </div>

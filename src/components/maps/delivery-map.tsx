@@ -16,18 +16,17 @@ const center = {
 };
 
 interface DeliveryMapProps {
+  apiKey: string;
   address: string;
   isDraggable?: boolean;
   initialCoordinates?: { lat: number; lng: number };
   onLocationChange?: (coords: { lat: number; lng: number }) => void;
 }
 
-export function DeliveryMap({ address, isDraggable = false, initialCoordinates, onLocationChange }: DeliveryMapProps) {
+export function DeliveryMap({ apiKey, address, isDraggable = false, initialCoordinates, onLocationChange }: DeliveryMapProps) {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(initialCoordinates || null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
     if (!apiKey) {
