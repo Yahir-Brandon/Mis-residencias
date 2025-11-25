@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Loader2, FileDown, Home, MapPin } from 'lucide-react';
+import { Loader2, FileDown, Home, MapPin, PackageCheck, Truck, CircleHelp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -18,6 +18,7 @@ import html2canvas from 'html2canvas';
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { DeliveryMap } from '@/components/maps/delivery-map';
+import { Badge } from '@/components/ui/badge';
 
 
 // Aumenta jsPDF con el método autoTable
@@ -33,6 +34,14 @@ const materialsList = [
   { name: "cal", price: 80, unit: "bulto" },
   { name: "alambre", price: 15, unit: "kg" },
 ];
+
+const statusConfig = {
+    'Pendiente': { title: '¡Pedido Recibido!', description: 'Hemos recibido tu pedido y lo estamos procesando.', icon: <CircleHelp className="h-12 w-12 text-gray-500" />, color: 'text-gray-500' },
+    'En proceso': { title: '¡Pedido en Proceso!', description: 'Estamos preparando tus materiales para el envío.', icon: <PackageCheck className="h-12 w-12 text-blue-500" />, color: 'text-blue-500' },
+    'Enviado': { title: '¡Tu Pedido va en Camino!', description: 'Tus materiales han sido enviados y llegarán pronto.', icon: <Truck className="h-12 w-12 text-purple-500" />, color: 'text-purple-500' },
+    'Entregado': { title: '¡Pedido Entregado!', description: 'Tus materiales han sido entregados con éxito. ¡Gracias por tu compra!', icon: <CheckCircle className="h-12 w-12 text-green-500" />, color: 'text-green-500' },
+    'Cancelado': { title: 'Pedido Cancelado', description: 'Este pedido ha sido cancelado.', icon: <AlertTriangle className="h-12 w-12 text-red-500" />, color: 'text-red-500' },
+};
 
 
 function OrderSummaryContent() {
@@ -187,21 +196,26 @@ function OrderSummaryContent() {
     materials,
     deliveryDates,
     total,
-    location
+    location,
+    status
   } = orderData;
   
   const deliveryStart = new Date(deliveryDates.from.seconds * 1000);
   const deliveryEnd = new Date(deliveryDates.to.seconds * 1000);
   const fullAddress = `${street} ${number}, ${municipality}, ${state}, C.P. ${postalCode}`;
 
+  const currentStatusConfig = statusConfig[status as keyof typeof statusConfig] || statusConfig['Pendiente'];
+
+
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
       <Card className="max-w-4xl mx-auto shadow-lg">
           <CardHeader>
-              <CardTitle className="text-3xl font-bold font-headline text-center">¡Pedido en Proceso!</CardTitle>
-              <CardDescription className="text-center">
-                  Gracias por tu compra. Revisa el resumen y descarga tu ticket.
-              </CardDescription>
+              <div className="flex flex-col items-center text-center">
+                  <div className={`mb-4 ${currentStatusConfig.color}`}>{currentStatusConfig.icon}</div>
+                  <CardTitle className="text-3xl font-bold font-headline">{currentStatusConfig.title}</CardTitle>
+                  <CardDescription className="mt-2">{currentStatusConfig.description}</CardDescription>
+              </div>
           </CardHeader>
 
           {/* Este contenido es solo para mostrar, el PDF se genera programáticamente */}
@@ -212,16 +226,22 @@ function OrderSummaryContent() {
               <Separator className="my-4 bg-gray-300" />
               
               <div className="text-sm space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                          <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
-                          <p>{requesterName}</p>
-                      </div>
-                      <div>
-                          <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
-                          <p>{projectName}</p>
-                      </div>
-                  </div>
+                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <h3 className="font-bold uppercase text-muted-foreground">Solicitante:</h3>
+                            <p>{requesterName}</p>
+                        </div>
+                        <div>
+                            <h3 className="font-bold uppercase text-muted-foreground">Obra:</h3>
+                            <p>{projectName}</p>
+                        </div>
+                         <div>
+                            <h3 className="font-bold uppercase text-muted-foreground">Estado del Pedido:</h3>
+                             <Badge variant={status === 'Entregado' ? 'default' : 'secondary'} className={`${currentStatusConfig.color} border-current`}>
+                                {status}
+                            </Badge>
+                        </div>
+                    </div>
                   <div>
                       <h3 className="font-bold uppercase text-muted-foreground">Teléfono:</h3>
                       <p>{phone}</p>
