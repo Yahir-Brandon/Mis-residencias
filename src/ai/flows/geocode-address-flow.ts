@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview Flujo y herramienta de IA para la geocodificación de direcciones utilizando la API de Google Maps.
  *
@@ -30,6 +29,7 @@ export type GeocodeAddressOutput = z.infer<typeof GeocodeAddressOutputSchema>;
 export async function geocodeAddress(
   input: GeocodeAddressInput
 ): Promise<GeocodeAddressOutput> {
+  'use server';
   return geocodeAddressFlow(input);
 }
 
