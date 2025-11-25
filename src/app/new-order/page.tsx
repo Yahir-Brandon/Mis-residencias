@@ -271,58 +271,67 @@ export default function NewOrderPage() {
 
   const handleUseCurrentLocation = () => {
     if ("geolocation" in navigator) {
-        setIsGettingLocation(true);
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                const coords = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                try {
-                    const address = await reverseGeocode(coords);
-                    form.setValue('street', `${address.street}`);
-                    form.setValue('number', `${address.number}`);
-                    form.setValue('colony', address.colony);
-                    form.setValue('postalCode', address.postalCode);
-                    form.setValue('state', address.state);
-                    form.setValue('municipality', address.municipality);
-                    
-                    // Trigger validation after setting values
-                    form.trigger(['street', 'number', 'colony', 'postalCode', 'state', 'municipality']);
+      setIsGettingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          const ACCEPTABLE_ACCURACY_METERS = 100;
 
-                    toast({
-                        title: "Ubicación Obtenida",
-                        description: "Los campos de dirección han sido actualizados.",
-                    });
+          if (accuracy > ACCEPTABLE_ACCURACY_METERS) {
+            toast({
+              variant: "destructive",
+              title: "Ubicación Poco Precisa",
+              description: `La precisión actual (${Math.round(accuracy)}m) es muy baja. Intenta de nuevo en un lugar con mejor señal o ingresa la dirección manualmente.`,
+              duration: 5000,
+            });
+            setIsGettingLocation(false);
+            return;
+          }
 
-                } catch (error) {
-                    console.error("Error reverse geocoding:", error);
-                    toast({
-                        variant: "destructive",
-                        title: "Error de Dirección",
-                        description: "No se pudo obtener la dirección desde tu ubicación.",
-                    });
-                } finally {
-                    setIsGettingLocation(false);
-                }
-            },
-            (error) => {
-                console.error("Error getting current location:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error de Ubicación",
-                    description: "No se pudo obtener tu ubicación actual. Asegúrate de haber concedido los permisos.",
-                });
-                setIsGettingLocation(false);
-            },
-            { enableHighAccuracy: true }
-        );
-    } else {
-        toast({
+          const coords = { lat: latitude, lng: longitude };
+          try {
+            const address = await reverseGeocode(coords);
+            form.setValue('street', `${address.street}`);
+            form.setValue('number', `${address.number}`);
+            form.setValue('colony', address.colony);
+            form.setValue('postalCode', address.postalCode);
+            form.setValue('state', address.state);
+            form.setValue('municipality', address.municipality);
+
+            form.trigger(['street', 'number', 'colony', 'postalCode', 'state', 'municipality']);
+
+            toast({
+              title: "Ubicación Obtenida",
+              description: "Los campos de dirección han sido actualizados.",
+            });
+          } catch (error) {
+            console.error("Error reverse geocoding:", error);
+            toast({
+              variant: "destructive",
+              title: "Error de Dirección",
+              description: "No se pudo obtener la dirección desde tu ubicación.",
+            });
+          } finally {
+            setIsGettingLocation(false);
+          }
+        },
+        (error) => {
+          console.error("Error getting current location:", error);
+          toast({
             variant: "destructive",
-            title: "Navegador no compatible",
-            description: "Tu navegador no soporta la geolocalización.",
-        });
+            title: "Error de Ubicación",
+            description: "No se pudo obtener tu ubicación actual. Asegúrate de haber concedido los permisos.",
+          });
+          setIsGettingLocation(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Navegador no compatible",
+        description: "Tu navegador no soporta la geolocalización.",
+      });
     }
   };
 
