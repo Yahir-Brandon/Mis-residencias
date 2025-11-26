@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { analyzeDeliveryDate } from "@/ai/flows/analyze-delivery-date-flow";
 import { useRouter } from "next/navigation";
 import { useFirestore, useUser } from "@/firebase";
-import { addDoc, collection, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { useToast } from "@/hooks/use-toast";
@@ -194,32 +194,6 @@ export default function NewOrderPage() {
     }
   }
 
-  const notifyAdmins = async (order: any) => {
-    if (!firestore) return;
-    try {
-        const adminsQuery = query(collection(firestore, 'users'), where('userType', '==', 'admin'));
-        const adminSnapshot = await getDocs(adminsQuery);
-        
-        const notificationPromises = adminSnapshot.docs.map(adminDoc => {
-            const adminId = adminDoc.id;
-            const notificationRef = collection(firestore, 'users', adminId, 'notifications');
-            return addDoc(notificationRef, {
-                userId: adminId,
-                orderId: order.id,
-                message: `Se ha recibido un nuevo pedido para la obra "${order.projectName}".`,
-                read: false,
-                createdAt: serverTimestamp(),
-            });
-        });
-
-        await Promise.all(notificationPromises);
-    } catch (error) {
-        console.error("Error al notificar a los administradores:", error);
-        // Opcional: mostrar un toast al usuario si la notificación a los admins falla,
-        // aunque el pedido del usuario se haya creado correctamente.
-    }
-};
-
   const handleLocationConfirmation = async (confirmedLocation: {lat: number, lng: number}) => {
     if (!user || !firestore || !deliveryAnalysis || !lastSubmittedData) return;
     setIsSubmitting(true);
@@ -238,13 +212,9 @@ export default function NewOrderPage() {
     
     addDoc(ordersCollectionRef, orderData)
       .then(async (docRef) => {
-
-        // Notificar a los administradores del nuevo pedido
-        await notifyAdmins({ id: docRef.id, ...orderData });
-
         toast({
             title: "Pedido Enviado",
-            description: "Tu pedido se ha guardado correctamente y los administradores han sido notificados.",
+            description: "Tu pedido se ha guardado correctamente.",
         });
         router.push(`/order-summary?userId=${user.uid}&orderId=${docRef.id}`);
       })
