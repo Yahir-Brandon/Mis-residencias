@@ -88,7 +88,7 @@ export default function ProfilePage() {
                     <Card className="w-full shadow-lg">
                         <CardHeader className="items-center text-center">
                             <Avatar className="h-24 w-24 mb-2">
-                                <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Admin'} />
+                                <AvatarImage src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwjUDzWTN_cm49cji7n30AHDElHnzxOKWMOA&s" alt={'Admin'} />
                                 <AvatarFallback>{nameFallback}</AvatarFallback>
                             </Avatar>
                             <CardTitle className="text-xl font-bold font-headline">{user.displayName || 'Administrador'}</CardTitle>
