@@ -42,10 +42,12 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { Separator } from '../ui/separator';
 import { useState, useEffect, useRef } from 'react';
 import { DeliveryMap } from '../maps/delivery-map';
 import SignaturePad from './signature-pad';
+import { Calendar } from '../ui/calendar';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -88,6 +90,7 @@ export default function OrderList() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 
@@ -152,7 +155,7 @@ export default function OrderList() {
         const notificationRef = collection(firestore, 'users', order.userId, 'notifications');
         const notificationMessage = `El estado de tu pedido para la obra "${order.projectName}" ha cambiado a: ${newStatus}.`;
         
-        await addDoc(notificationRef, {
+        addDoc(notificationRef, {
           userId: order.userId,
           orderId: order.id,
           message: notificationMessage,
@@ -201,7 +204,7 @@ export default function OrderList() {
         const notificationRef = collection(firestore, 'users', order.userId, 'notifications');
         const notificationMessage = `Tu pedido para la obra "${order.projectName}" ha sido cancelado y eliminado por un administrador.`;
         
-        await addDoc(notificationRef, {
+        addDoc(notificationRef, {
           userId: order.userId,
           orderId: order.id,
           message: notificationMessage,
@@ -300,113 +303,120 @@ export default function OrderList() {
   const generateOrderPdf = async () => {
     if (!selectedOrder) return;
     setIsGeneratingPdf(true);
-
+  
     try {
         const doc = new jsPDF();
-        const deliveryStart = new Date(selectedOrder.deliveryDates.from.seconds * 1000);
-        const deliveryEnd = new Date(selectedOrder.deliveryDates.to.seconds * 1000);
-        let finalTableY = 0;
-
+        let lastY = 20;
+  
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
-        doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
-
+        doc.text('Tlapaleria los Pinos', 105, lastY, { align: 'center' });
+        lastY += 10;
+  
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        
         const details = [
             { title: 'Solicitante:', content: selectedOrder.requesterName },
             { title: 'Obra:', content: selectedOrder.projectName },
             { title: 'Dirección:', content: `${selectedOrder.street} ${selectedOrder.number}, ${selectedOrder.colony}, ${selectedOrder.municipality}, ${selectedOrder.state}, C.P. ${selectedOrder.postalCode}` },
             { title: 'Teléfono:', content: selectedOrder.phone },
         ];
-
         doc.autoTable({
-            startY: 30,
+            startY: lastY,
             body: details,
             theme: 'plain',
             styles: { cellPadding: { top: 1, right: 2, bottom: 1, left: 0 }, fontSize: 10 },
             columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 'auto' } },
         });
-        
-        let lastY = (doc as any).lastAutoTable.finalY || 60;
-        
+        lastY = (doc as any).lastAutoTable.finalY + 10;
+  
         if (selectedOrder.location) {
-            const { lat, lng } = selectedOrder.location;
-            const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${mapsApiKey}`;
-            
-            try {
-                const response = await fetch(mapUrl);
-                const imageBlob = await response.blob();
-                const reader = new FileReader();
-                reader.readAsDataURL(imageBlob);
-                await new Promise<void>(resolve => {
-                    reader.onloadend = () => {
-                        const base64data = reader.result;
-                        doc.setFontSize(12);
-                        doc.setFont('helvetica', 'bold');
-                        doc.text('Ubicación de Entrega', 14, lastY + 10);
-                        doc.addImage(base64data as string, 'PNG', 14, lastY + 15, 180, 70);
-                        
-                        doc.setFontSize(10);
-                        doc.setTextColor(0, 0, 255); // Color azul para el enlace
-                        doc.textWithLink('¿Cómo llegar?', 14, lastY + 90, {
-                            url: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
-                        });
-
-                        lastY += 95; // Ajustar la posición para el siguiente elemento
-                        resolve();
-                    };
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Ubicación de Entrega', 14, lastY);
+          lastY += 5;
+          const { lat, lng } = selectedOrder.location;
+          const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${mapsApiKey}`;
+          try {
+            const response = await fetch(mapUrl);
+            const imageBlob = await response.blob();
+            const reader = new FileReader();
+            reader.readAsDataURL(imageBlob);
+            await new Promise<void>(resolve => {
+              reader.onloadend = () => {
+                doc.addImage(reader.result as string, 'PNG', 14, lastY, 180, 70);
+                lastY += 75;
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 255); // Blue color for link
+                doc.textWithLink('¿Cómo llegar?', 14, lastY, {
+                    url: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
                 });
-            } catch (mapError) {
-                console.error("Error fetching static map for PDF:", mapError);
-            }
-        }
-        
+                lastY += 5;
+                resolve();
+              };
+            });
+          } catch (mapError) {
+            console.error("Error fetching static map for PDF:", mapError);
+          }
+      }
+      lastY += 5;
+
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0); // Restaurar color de texto a negro
-        doc.text('Detalles del Pedido', 14, lastY + 10);
-
+        doc.setTextColor(0, 0, 0); // Restore text color
+        doc.text('Detalles del Pedido', 14, lastY);
+        lastY += 5;
+  
         const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
         const tableRows = selectedOrder.materials.map((material: any) => {
             const materialInfo = materialsList.find(m => m.name === material.name);
             const unitPrice = materialInfo?.price || 0;
             const subtotal = material.quantity * unitPrice;
-            return [
-                material.name,
-                `${material.quantity} ${materialInfo?.unit}(s)`,
-                `$${unitPrice.toFixed(2)}`,
-                `$${subtotal.toFixed(2)}`
-            ];
+            return [material.name, `${material.quantity} ${materialInfo?.unit}(s)`, `$${unitPrice.toFixed(2)}`, `$${subtotal.toFixed(2)}`];
         });
-
         doc.autoTable({
-            startY: lastY + 15,
+            startY: lastY,
             head: [tableColumn],
             body: tableRows,
             theme: 'striped',
             headStyles: { fillColor: [41, 128, 185], textColor: 255 },
             styles: { fontSize: 10 },
-            didDrawPage: (data) => {
-                finalTableY = data.cursor?.y ?? 0;
-                const pageCount = doc.internal.getNumberOfPages();
-                doc.setFontSize(8);
-                doc.setTextColor(150);
-                doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
-            }
         });
-        
-        finalTableY = (doc as any).lastAutoTable.finalY;
-
+        lastY = (doc as any).lastAutoTable.finalY + 10;
+  
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0,0,0);
-        doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
-        doc.text(`$${selectedOrder.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
+        doc.text('Total del Pedido:', 140, lastY, { align: 'right' });
+        doc.text(`$${selectedOrder.total.toFixed(2)} MXN`, 200, lastY, { align: 'right' });
+        lastY += 15;
 
+        if (calendarRef.current) {
+            if (lastY > 220) {
+              doc.addPage();
+              lastY = 20;
+            }
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Periodo de Entrega Programado', 14, lastY);
+            lastY += 10;
+            const canvas = await html2canvas(calendarRef.current, { scale: 2, backgroundColor: '#ffffff' });
+            const imgData = canvas.toDataURL('image/png');
+            const imgProps = doc.getImageProperties(imgData);
+            const pdfWidth = doc.internal.pageSize.getWidth() - 28;
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            doc.addImage(imgData, 'PNG', 14, lastY, pdfWidth, pdfHeight);
+        }
+  
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+        }
+  
         doc.save(`pedido-${selectedOrder.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
-
+  
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
@@ -645,11 +655,27 @@ export default function OrderList() {
                             
                             <Separator className="my-4 bg-gray-300" />
                             
-                            <div className="flex flex-col items-center">
+                            <div ref={calendarRef} className="flex flex-col items-center bg-white">
                                 <h3 className="font-bold uppercase mb-2">Periodo de Entrega Programado</h3>
-                                <p>
-                                    Del {format(selectedOrder.deliveryDates.from.toDate(), 'PPP', { locale: es })} al {format(selectedOrder.deliveryDates.to.toDate(), 'PPP', { locale: es })}
-                                </p>
+                                <Calendar
+                                    mode="range"
+                                    selected={{ from: selectedOrder.deliveryDates.from.toDate(), to: selectedOrder.deliveryDates.to.toDate() }}
+                                    defaultMonth={selectedOrder.deliveryDates.from.toDate()}
+                                    locale={es}
+                                    numberOfMonths={2}
+                                    className="p-0"
+                                    classNames={{
+                                      head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
+                                      cell: "h-8 w-8 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                                      day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100",
+                                      day_selected: "bg-primary/20 text-primary-foreground",
+                                      day_today: "bg-primary/90 text-primary-foreground rounded-md",
+                                      day_range_start: "day-range-start !bg-red-500 !text-white rounded-md",
+                                      day_range_end: "day-range-end !bg-green-500 !text-white rounded-md",
+                                      day_range_middle: "aria-selected:bg-primary/20 aria-selected:text-primary-foreground"
+                                    }}
+                                    disabled
+                                 />
                             </div>
                         </div>
                         <DialogFooter className="pt-4">

@@ -63,7 +63,7 @@ function OrderSummaryContent() {
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const summaryRef = useRef<HTMLDivElement>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 
@@ -75,120 +75,135 @@ function OrderSummaryContent() {
   }, [error, router]);
 
   const generatePdf = async () => {
-    if (!orderData) return;
+    if (!orderData || !summaryRef.current) return;
     setIsGeneratingPdf(true);
-
+  
     try {
-        const doc = new jsPDF();
-        const deliveryStart = new Date(orderData.deliveryDates.from.seconds * 1000);
-        const deliveryEnd = new Date(orderData.deliveryDates.to.seconds * 1000);
-        let finalTableY = 0;
-
-        // Encabezado
+      const doc = new jsPDF();
+      let lastY = 20; // Initial Y position
+  
+      // --- Encabezado ---
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('Tlapaleria los Pinos', 105, lastY, { align: 'center' });
+      lastY += 10;
+  
+      // --- Información del Pedido ---
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const details = [
+        { title: 'Solicitante:', content: orderData.requesterName },
+        { title: 'Obra:', content: orderData.projectName },
+        { title: 'Dirección:', content: `${orderData.street} ${orderData.number}, ${orderData.colony}, ${orderData.municipality}, ${orderData.state}, C.P. ${orderData.postalCode}` },
+        { title: 'Teléfono:', content: orderData.phone },
+      ];
+      doc.autoTable({
+        startY: lastY,
+        body: details,
+        theme: 'plain',
+        styles: { cellPadding: { top: 1, right: 2, bottom: 1, left: 0 }, fontSize: 10 },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: 'auto' } },
+      });
+      lastY = (doc as any).lastAutoTable.finalY + 10;
+  
+      // --- Mapa de Ubicación ---
+      if (orderData.location) {
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        doc.text('Tlapaleria los Pinos', 105, 20, { align: 'center' });
-
-        // Información del Pedido
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        
-        const details = [
-            { title: 'Solicitante:', content: orderData.requesterName },
-            { title: 'Obra:', content: orderData.projectName },
-            { title: 'Dirección:', content: `${orderData.street} ${orderData.number}, ${orderData.colony}, ${orderData.municipality}, ${orderData.state}, C.P. ${orderData.postalCode}` },
-            { title: 'Teléfono:', content: orderData.phone },
-        ];
-
-        doc.autoTable({
-            startY: 30,
-            body: details,
-            theme: 'plain',
-            styles: {
-            cellPadding: { top: 1, right: 2, bottom: 1, left: 0 },
-            fontSize: 10,
-            },
-            columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 40 },
-            1: { cellWidth: 'auto' },
-            },
-        });
-        
-        let lastY = (doc as any).lastAutoTable.finalY || 60;
-
-        if (orderData.location) {
-            const { lat, lng } = orderData.location;
-            const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${mapsApiKey}`;
-            
-            try {
-                const response = await fetch(mapUrl);
-                const imageBlob = await response.blob();
-                const reader = new FileReader();
-                reader.readAsDataURL(imageBlob);
-                await new Promise<void>(resolve => {
-                    reader.onloadend = () => {
-                        const base64data = reader.result;
-                        doc.setFontSize(12);
-                        doc.setFont('helvetica', 'bold');
-                        doc.text('Ubicación de Entrega', 14, lastY + 10);
-                        doc.addImage(base64data as string, 'PNG', 14, lastY + 15, 180, 70);
-                        lastY += 85; // Aumenta el espacio vertical para el mapa
-                        resolve();
-                    };
-                });
-            } catch (mapError) {
-                console.error("Error fetching static map:", mapError);
-            }
+        doc.text('Ubicación de Entrega', 14, lastY);
+        lastY += 5;
+        const { lat, lng } = orderData.location;
+        const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=16&size=600x300&maptype=roadmap&markers=color:red%7C${lat},${lng}&key=${mapsApiKey}`;
+        try {
+          const response = await fetch(mapUrl);
+          const imageBlob = await response.blob();
+          const reader = new FileReader();
+          reader.readAsDataURL(imageBlob);
+          await new Promise<void>(resolve => {
+            reader.onloadend = () => {
+              doc.addImage(reader.result as string, 'PNG', 14, lastY, 180, 70);
+              lastY += 75;
+              resolve();
+            };
+          });
+        } catch (mapError) {
+          console.error("Error fetching static map:", mapError);
+          lastY += 5; // Add some space even if map fails
         }
-        
+      }
+  
+      // --- Detalles del Pedido (Tabla) ---
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Detalles del Pedido', 14, lastY);
+      lastY += 5;
+      const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
+      const tableRows = orderData.materials.map((material: any) => {
+        const materialInfo = materialsList.find(m => m.name === material.name);
+        const unitPrice = materialInfo?.price || 0;
+        const subtotal = material.quantity * unitPrice;
+        return [material.name, `${material.quantity} ${materialInfo?.unit}(s)`, `$${unitPrice.toFixed(2)}`, `$${subtotal.toFixed(2)}`];
+      });
+      doc.autoTable({
+        startY: lastY,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        styles: { fontSize: 10 },
+      });
+      lastY = (doc as any).lastAutoTable.finalY + 10;
+  
+      // --- Total del Pedido ---
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total del Pedido:', 140, lastY, { align: 'right' });
+      doc.text(`$${orderData.total.toFixed(2)} MXN`, 200, lastY, { align: 'right' });
+      lastY += 15;
+  
+      // --- Calendario de Entrega ---
+      if (calendarRef.current) {
+        // Check if there is enough space, otherwise add a new page
+        if (lastY > 220) { // 220 is a heuristic value, adjust if needed
+          doc.addPage();
+          lastY = 20;
+        }
+
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text('Detalles del Pedido', 14, lastY + 10);
-
-        const tableColumn = ["Descripción", "Cantidad", "P. Unitario", "Importe"];
-        const tableRows = orderData.materials.map((material: any) => {
-            const materialInfo = materialsList.find(m => m.name === material.name);
-            const unitPrice = materialInfo?.price || 0;
-            const subtotal = material.quantity * unitPrice;
-            return [
-                material.name,
-                `${material.quantity} ${materialInfo?.unit}(s)`,
-                `$${unitPrice.toFixed(2)}`,
-                `$${subtotal.toFixed(2)}`
-            ];
+        doc.text('Periodo de Entrega Programado', 14, lastY);
+        lastY += 10;
+  
+        const canvas = await html2canvas(calendarRef.current, {
+          scale: 2, // Increase scale for better resolution
+          backgroundColor: null, // Use transparent background
         });
-
-        doc.autoTable({
-            startY: lastY + 15,
-            head: [tableColumn],
-            body: tableRows,
-            theme: 'striped',
-            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-            styles: { fontSize: 10 },
-            didDrawPage: (data) => {
-                finalTableY = data.cursor?.y ?? 0;
-                const pageCount = doc.internal.getNumberOfPages();
-                doc.setFontSize(8);
-                doc.setTextColor(150);
-                doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
-            }
-        });
-        
-        finalTableY = (doc as any).lastAutoTable.finalY;
-
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Total del Pedido:', 140, finalTableY + 10, { align: 'right' });
-        doc.text(`$${orderData.total.toFixed(2)} MXN`, 200, finalTableY + 10, { align: 'right' });
-
-        doc.save(`pedido-${orderData.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
-
+        const imgData = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(imgData);
+        const pdfWidth = doc.internal.pageSize.getWidth() - 28; // with margins
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        doc.addImage(imgData, 'PNG', 14, lastY, pdfWidth, pdfHeight);
+        lastY += pdfHeight + 10;
+      }
+  
+      // --- Footer y Paginación ---
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+      }
+  
+      doc.save(`pedido-${orderData.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
+  
     } catch (error) {
       console.error("Error generating PDF:", error);
     } finally {
       setIsGeneratingPdf(false);
     }
   };
+
 
   if (isOrderLoading || !orderData) {
     return (
@@ -224,7 +239,7 @@ function OrderSummaryContent() {
 
   return (
     <div className="container mx-auto py-12 px-4 animate-fade-in">
-      <Card className="max-w-4xl mx-auto shadow-lg">
+      <Card ref={summaryRef} className="max-w-4xl mx-auto shadow-lg">
           <CardHeader>
               <div className="flex flex-col items-center text-center">
                   <div className={`mb-4 ${currentStatusConfig.color}`}>{currentStatusConfig.icon}</div>
@@ -234,7 +249,7 @@ function OrderSummaryContent() {
           </CardHeader>
 
           {/* Este contenido es solo para mostrar, el PDF se genera programáticamente */}
-          <div ref={summaryRef} className="p-6 sm:p-8 bg-white text-black rounded-lg">
+          <div className="p-6 sm:p-8 bg-white text-black rounded-lg">
               <div className="flex justify-center items-center mb-4">
                   <Logo />
               </div>
@@ -264,7 +279,7 @@ function OrderSummaryContent() {
                   <div className="space-y-2">
                       <h3 className="font-bold uppercase text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4"/>Ubicación de Entrega:</h3>
                       <p>{fullAddress}</p>
-                       <div ref={mapContainerRef} className="h-[250px] w-full rounded-lg overflow-hidden border">
+                       <div className="h-[250px] w-full rounded-lg overflow-hidden border">
                           <DeliveryMap apiKey={mapsApiKey} address={fullAddress} initialCoordinates={location} />
                        </div>
                   </div>
@@ -307,7 +322,7 @@ function OrderSummaryContent() {
               
               <Separator className="my-4 bg-gray-300" />
               
-              <div className="flex flex-col items-center">
+              <div ref={calendarRef} className="flex flex-col items-center bg-white">
                   <h3 className="font-bold uppercase mb-2">Periodo de Entrega Programado</h3>
                    <Calendar
                       mode="range"
