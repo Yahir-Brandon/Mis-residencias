@@ -14,6 +14,7 @@ import UserList from "@/components/admin/user-list";
 import BusinessList from "@/components/admin/business-list";
 import OrderList from "@/components/admin/order-list";
 import UserOrderList from "@/components/profile/user-order-list";
+import Image from "next/image";
 
 export default function ProfilePage() {
   const router = useRouter();
