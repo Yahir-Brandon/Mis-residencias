@@ -242,32 +242,33 @@ export default function OrderList() {
   };
 
   const generateConfirmationPdf = (order: any, signatureDataUrl: string, confirmedAt: Date) => {
-      const docPdf = new jsPDF();
-      
-      docPdf.setFont('helvetica', 'bold');
-      docPdf.setFontSize(20);
-      docPdf.text('Confirmación de Entrega', 105, 20, { align: 'center' });
+    const docPdf = new jsPDF();
+    const pageWidth = docPdf.internal.pageSize.getWidth();
+    
+    docPdf.setFont('helvetica', 'bold');
+    docPdf.setFontSize(20);
+    docPdf.text('Confirmación de Entrega de Material', pageWidth / 2, 20, { align: 'center' });
 
-      docPdf.setFontSize(11);
-      docPdf.setFont('helvetica', 'normal');
-      const deliveryDate = format(confirmedAt, "dd 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs.'", { locale: es });
-      
-      const bodyText = `Por medio de la presente, yo, ${order.requesterName}, manifiesto haber recibido a mi entera satisfacción el conjunto de materiales correspondientes al pedido con folio ${order.id}, destinado a la obra denominada "${order.projectName}".\n\nLa entrega fue realizada en la fecha y hora: ${deliveryDate}.\n\nLa firma que se anexa a continuación sirve como prueba fehaciente de la recepción y conformidad de los materiales entregados.`;
-      
-      const splitText = docPdf.splitTextToSize(bodyText, 180);
-      docPdf.text(splitText, 14, 40);
-      
-      docPdf.setFont('helvetica', 'bold');
-      docPdf.text('Firma de Recepción:', 14, 100);
-      docPdf.addImage(signatureDataUrl, 'PNG', 14, 105, 180, 50);
-      docPdf.line(14, 160, 196, 160);
-      docPdf.setFont('helvetica', 'normal');
-      docPdf.text(order.requesterName, 105, 165, { align: 'center' });
-      docPdf.setFontSize(10);
-      docPdf.text("Nombre y Firma de Quien Recibe", 105, 170, { align: 'center' });
+    docPdf.setFontSize(11);
+    docPdf.setFont('helvetica', 'normal');
+    const deliveryDate = format(confirmedAt, "dd 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs.'", { locale: es });
+    
+    const bodyText = `Por medio del presente documento, yo, ${order.requesterName}, en mi calidad de receptor, hago constar que he recibido a mi entera y total satisfacción el conjunto de materiales especificados en el pedido con folio ${order.id}, el cual está destinado para la obra denominada "${order.projectName}".\n\nLa entrega fue efectuada en la fecha y hora: ${deliveryDate}.\n\nLa firma que se estampa a continuación funge como prueba irrefutable de la recepción de los bienes y de la conformidad con la calidad y cantidad de los mismos, no reservándome acción o derecho alguno que ejercitar en contra de Tlapaleria los Pinos por este concepto.`;
+    
+    const splitText = docPdf.splitTextToSize(bodyText, 180);
+    docPdf.text(splitText, 14, 40);
+    
+    docPdf.setFont('helvetica', 'bold');
+    docPdf.text('Firma de Recepción:', pageWidth / 2, 115, { align: 'center' });
+    docPdf.addImage(signatureDataUrl, 'PNG', (pageWidth / 2) - 50, 120, 100, 40);
+    docPdf.line( (pageWidth / 2) - 50, 165, (pageWidth / 2) + 50, 165);
+    docPdf.setFont('helvetica', 'normal');
+    docPdf.text(order.requesterName, pageWidth / 2, 170, { align: 'center' });
+    docPdf.setFontSize(10);
+    docPdf.text("Nombre y Firma de Quien Recibe", pageWidth / 2, 175, { align: 'center' });
 
-      return docPdf;
-  };
+    return docPdf;
+};
 
 
   const handleSaveSignature = async (signatureDataUrl: string) => {
@@ -716,3 +717,5 @@ export default function OrderList() {
     </Card>
   );
 }
+
+    
