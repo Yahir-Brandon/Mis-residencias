@@ -407,14 +407,6 @@ export default function OrderList() {
             doc.addImage(imgData, 'PNG', 14, lastY, pdfWidth, pdfHeight);
         }
   
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.setTextColor(150);
-            doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
-        }
-  
         doc.save(`pedido-${selectedOrder.projectName.replace(/\s/g, '_') || 'resumen'}.pdf`);
   
     } catch (error) {
