@@ -244,29 +244,27 @@ export default function OrderList() {
   const generateConfirmationPdf = (order: any, signatureDataUrl: string, confirmedAt: Date) => {
       const docPdf = new jsPDF();
       
-      // Encabezado
       docPdf.setFont('helvetica', 'bold');
       docPdf.setFontSize(20);
       docPdf.text('Confirmación de Entrega', 105, 20, { align: 'center' });
 
-      // Información del Pedido
-      docPdf.setFontSize(12);
+      docPdf.setFontSize(11);
       docPdf.setFont('helvetica', 'normal');
       const deliveryDate = format(confirmedAt, "dd 'de' MMMM 'de' yyyy 'a las' HH:mm 'hrs.'", { locale: es });
-      const confirmationText = `Yo, ${order.requesterName}, confirmo haber recibido a mi entera satisfacción los materiales correspondientes al pedido de la obra "${order.projectName}" con ID: ${order.id}, en la fecha ${deliveryDate}.`;
       
-      const splitText = docPdf.splitTextToSize(confirmationText, 180);
+      const bodyText = `Por medio de la presente, yo, ${order.requesterName}, manifiesto haber recibido a mi entera satisfacción el conjunto de materiales correspondientes al pedido con folio ${order.id}, destinado a la obra denominada "${order.projectName}".\n\nLa entrega fue realizada en la fecha y hora: ${deliveryDate}.\n\nLa firma que se anexa a continuación sirve como prueba fehaciente de la recepción y conformidad de los materiales entregados.`;
+      
+      const splitText = docPdf.splitTextToSize(bodyText, 180);
       docPdf.text(splitText, 14, 40);
       
-      // Firma
       docPdf.setFont('helvetica', 'bold');
-      docPdf.text('Firma de Recepción:', 14, 80);
-      docPdf.addImage(signatureDataUrl, 'PNG', 14, 85, 180, 60);
-      docPdf.line(14, 150, 196, 150); // Línea debajo de la firma
+      docPdf.text('Firma de Recepción:', 14, 100);
+      docPdf.addImage(signatureDataUrl, 'PNG', 14, 105, 180, 50);
+      docPdf.line(14, 160, 196, 160);
       docPdf.setFont('helvetica', 'normal');
-      docPdf.text(order.requesterName, 105, 155, { align: 'center' });
+      docPdf.text(order.requesterName, 105, 165, { align: 'center' });
       docPdf.setFontSize(10);
-      docPdf.text("Nombre y Firma", 105, 160, { align: 'center' });
+      docPdf.text("Nombre y Firma de Quien Recibe", 105, 170, { align: 'center' });
 
       return docPdf;
   };
